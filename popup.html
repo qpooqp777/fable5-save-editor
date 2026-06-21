@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fable 5 存檔編輯器</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title">⚔️ Fable 5 Save Editor</div>
+    <div class="header-actions">
+      <button class="btn btn-sm btn-ghost" id="btn-import-file" title="從 JSON 檔案匯入">📂 匯入</button>
+      <button class="btn btn-sm btn-ghost" id="btn-export-file" title="匯出 JSON 檔案">💾 匯出</button>
+      <input type="file" id="file-import" accept=".json" style="display:none">
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-tab="character">👤 角色</button>
+    <button class="tab" data-tab="stats">💪 能力</button>
+    <button class="tab" data-tab="inventory">🎒 背包</button>
+    <button class="tab" data-tab="equipment">⚔️ 裝備</button>
+    <button class="tab" data-tab="skills">🎯 技能</button>
+    <button class="tab" data-tab="world">🌍 世界</button>
+    <button class="tab" data-tab="config">⚙️ 設定</button>
+    <button class="tab" data-tab="slots">📦 存檔</button>
+    <button class="tab" data-tab="json">{ } JSON</button>
+  </div>
+
+  <!-- ═══════════════════ CHARACTER ═══════════════════ -->
+  <div class="tab-content active" id="tab-character">
+    <div class="section-title">👤 角色基本資料</div>
+    <div class="form-grid">
+      <label>職業</label>
+      <select id="f-cls">
+        <option value="warrior">⚔️ 戰士 Warrior</option>
+        <option value="mage">🔮 法師 Mage</option>
+        <option value="ranger">🏹 遊俠 Ranger</option>
+        <option value="paladin">🛡️ 聖騎士 Paladin</option>
+        <option value="rogue">🗡️ 盜賊 Rogue</option>
+        <option value="cleric">✝️ 牧師 Cleric</option>
+        <option value="darkknight">🌑 黑暗騎士 DarkKnight</option>
+        <option value="illusionist">🌀 幻術師 Illusionist</option>
+      </select>
+      <label>角色名稱</label>
+      <input type="text" id="f-name" placeholder="未命名">
+      <label>頭像</label>
+      <input type="text" id="f-avatar" placeholder="女法師">
+      <label>等級</label>
+      <input type="number" id="f-lv" min="1" max="99999">
+      <label>經驗值</label>
+      <input type="number" id="f-exp" min="0">
+      <label>金錢 (G)</label>
+      <input type="number" id="f-gold" min="0">
+    </div>
+    <div class="section-title mt">❤️ 生命與魔力</div>
+    <div class="form-grid">
+      <label>當前 HP</label>
+      <input type="number" id="f-hp" step="0.1">
+      <label>最大 HP</label>
+      <input type="number" id="f-mhp" step="0.1">
+      <label>當前 MP</label>
+      <input type="number" id="f-mp" step="0.1">
+      <label>最大 MP</label>
+      <input type="number" id="f-mmp" step="0.1">
+      <label>已死亡</label>
+      <select id="f-dead"><option value="false">否</option><option value="true">是</option></select>
+    </div>
+    <div class="section-title mt">🌀 變身狀態 (Poly)</div>
+    <div class="form-grid">
+      <label>變身名稱</label>
+      <input type="text" id="f-poly-n" placeholder="黑長者">
+      <label>魔法傷害加成</label>
+      <input type="number" id="f-poly-mgd" step="0.1">
+      <label>速度加成</label>
+      <input type="number" id="f-poly-spd" step="0.1">
+      <label>MP回復加成</label>
+      <input type="number" id="f-poly-mpr" step="0.1">
+      <label>特殊加成</label>
+      <input type="number" id="f-poly-sp" step="0.1">
+      <label>清除變身</label>
+      <button class="btn btn-danger btn-sm" id="btn-clear-poly">清除變身</button>
+    </div>
+    <div class="section-title mt">✨ 祝福 (Blessings)</div>
+    <div class="form-grid">
+      <label>勇猛祝福</label>
+      <input type="number" id="f-bless-brave">
+      <label>支援祝福</label>
+      <input type="number" id="f-bless-support">
+      <label>精準祝福</label>
+      <input type="number" id="f-bless-precise">
+      <label>烈焰祝福</label>
+      <input type="number" id="f-bless-blaze">
+    </div>
+  </div>
+
+  <!-- ═══════════════════ STATS ═══════════════════ -->
+  <div class="tab-content" id="tab-stats">
+    <div class="section-title">💪 基礎能力值 (Base Stats)</div>
+    <div class="form-grid">
+      <label>力量 STR</label><input type="number" id="f-str" min="0" max="9999">
+      <label>敏捷 DEX</label><input type="number" id="f-dex" min="0" max="9999">
+      <label>體質 CON</label><input type="number" id="f-con" min="0" max="9999">
+      <label>智力 INT</label><input type="number" id="f-int" min="0" max="9999">
+      <label>感知 WIS</label><input type="number" id="f-wis" min="0" max="9999">
+      <label>魅力 CHA</label><input type="number" id="f-cha" min="0" max="9999">
+    </div>
+    <div class="section-title mt">🏆 獎勵分配</div>
+    <div class="form-grid">
+      <label>獎勵點數</label><input type="number" id="f-bonus" min="0">
+      <label>STR 分配</label><input type="number" id="f-alloc-str" min="0">
+      <label>DEX 分配</label><input type="number" id="f-alloc-dex" min="0">
+      <label>CON 分配</label><input type="number" id="f-alloc-con" min="0">
+      <label>INT 分配</label><input type="number" id="f-alloc-int" min="0">
+      <label>WIS 分配</label><input type="number" id="f-alloc-wis" min="0">
+      <label>CHA 分配</label><input type="number" id="f-alloc-cha" min="0">
+    </div>
+    <div class="section-title mt">🧪 萬靈藥加點 (Panacea)</div>
+    <div class="form-grid">
+      <label>STR</label><input type="number" id="f-pan-str" min="0">
+      <label>DEX</label><input type="number" id="f-pan-dex" min="0">
+      <label>CON</label><input type="number" id="f-pan-con" min="0">
+      <label>INT</label><input type="number" id="f-pan-int" min="0">
+      <label>WIS</label><input type="number" id="f-pan-wis" min="0">
+      <label>CHA</label><input type="number" id="f-pan-cha" min="0">
+      <label>已使用次數</label><input type="number" id="f-pan-used" min="0">
+    </div>
+    <div class="section-title mt">📊 衍生屬性 (Derived Stats)</div>
+    <div class="form-grid" id="derived-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════ INVENTORY ═══════════════════ -->
+  <div class="tab-content" id="tab-inventory">
+    <div class="inv-toolbar">
+      <div class="search-row">
+        <input type="text" id="inv-search" placeholder="🔍 搜尋物品 ID / 類型..." class="search-input">
+        <select id="inv-cat-filter" class="cat-filter">
+          <option value="">全部類型</option>
+          <option value="wpn">⚔️ 武器 wpn</option>
+          <option value="amr">🛡️ 鎧甲 amr</option>
+          <option value="arm">🛡️ 護甲 arm</option>
+          <option value="hlm">🪖 頭盔 hlm</option>
+          <option value="shd">🛡️ 盾牌 shd</option>
+          <option value="clk">🧥 披風 clk</option>
+          <option value="glv">🧤 手套 glv</option>
+          <option value="bot">👢 靴子 bot</option>
+          <option value="acc">💍 飾品 acc</option>
+          <option value="amu">📿 項鍊 amu</option>
+          <option value="blt">🪢 腰帶 blt</option>
+          <option value="rng">💍 戒指 rng</option>
+          <option value="bk">📜 卷軸 bk</option>
+          <option value="scroll">📜 卷軸 scroll</option>
+          <option value="potion">🧪 藥水 potion</option>
+          <option value="panacea">🧪 萬靈藥 panacea</option>
+          <option value="mat">📦 材料 mat</option>
+          <option value="item">📦 道具 item</option>
+          <option value="quest">📋 任務 quest</option>
+          <option value="new">❓ 新物品 new</option>
+        </select>
+      </div>
+      <div class="sort-row">
+        <span class="sort-label">排序：</span>
+        <button class="btn btn-sm sort-btn active" data-sort="default">預設</button>
+        <button class="btn btn-sm sort-btn" data-sort="id">ID</button>
+        <button class="btn btn-sm sort-btn" data-sort="cnt-desc">數量↓</button>
+        <button class="btn btn-sm sort-btn" data-sort="cnt-asc">數量↑</button>
+        <button class="btn btn-sm sort-btn" data-sort="en-desc">強化↓</button>
+        <button class="btn btn-sm sort-btn" data-sort="bless">祝福</button>
+        <button class="btn btn-sm sort-btn" data-sort="anc">遠古</button>
+        <button class="btn btn-sm sort-btn" data-sort="attr">屬性</button>
+        <button class="btn btn-sm sort-btn" data-sort="lock">鎖定</button>
+      </div>
+      <div class="inv-summary">
+        顯示 <span id="inv-show-count">0</span> / <span id="inv-total-count">0</span> 項
+        &nbsp;|&nbsp; 總數量 <span id="inv-total-qty">0</span>
+      </div>
+    </div>
+    <div id="inv-list" class="item-list"></div>
+    <div class="inv-actions-bar">
+      <button class="btn btn-secondary btn-sm" id="btn-add-item">+ 新增物品</button>
+      <button class="btn btn-danger btn-sm" id="btn-del-junk">🗑️ 刪除垃圾</button>
+      <button class="btn btn-secondary btn-sm" id="btn-unlock-all">🔓 全部解鎖</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ EQUIPMENT ═══════════════════ -->
+  <div class="tab-content" id="tab-equipment">
+    <div class="section-title">⚔️ 裝備欄位</div>
+    <div class="eq-grid" id="eq-grid"></div>
+    <div class="section-title mt">🎯 套裝效果狀態</div>
+    <div class="form-grid" id="set-bonus-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════ SKILLS ═══════════════════ -->
+  <div class="tab-content" id="tab-skills">
+    <div class="section-title">🎯 已學技能 (<span id="skill-count">0</span>)</div>
+    <div class="search-row mb">
+      <input type="text" id="skill-search" placeholder="🔍 搜尋技能..." class="search-input">
+    </div>
+    <div id="skills-list" class="skill-list"></div>
+    <div class="skill-input-row mt">
+      <input type="text" id="new-skill-id" placeholder="輸入技能 ID（如 sk_fireball）">
+      <button class="btn btn-primary btn-sm" id="btn-add-skill">+ 新增</button>
+    </div>
+    <div class="section-title mt">🌀 Buff 效果 (<span id="buff-count">0</span> 活躍)</div>
+    <div class="search-row mb">
+      <input type="text" id="buff-search" placeholder="🔍 搜尋 Buff..." class="search-input">
+    </div>
+    <div id="buffs-list" class="buff-list"></div>
+    <div class="section-title mt">🤝 夥伴 (Allies)</div>
+    <div id="allies-list" class="ally-list"></div>
+    <div class="section-title mt">🐾 召喚獸</div>
+    <div class="form-grid" id="summon-grid">
+      <label>技能 ID</label><input type="text" id="f-summon-skid">
+      <label>名稱</label><input type="text" id="f-summon-n">
+      <label>冷卻</label><input type="number" id="f-summon-cd">
+    </div>
+    <button class="btn btn-danger btn-sm mt" id="btn-clear-summon">清除召喚獸</button>
+  </div>
+
+  <!-- ═══════════════════ WORLD ═══════════════════ -->
+  <div class="tab-content" id="tab-world">
+    <div class="section-title">🌍 地圖進度</div>
+    <div class="form-grid">
+      <label>村莊 Village</label><input type="text" id="f-map-village">
+      <label>野外 Wild</label><input type="text" id="f-map-wild">
+      <label>地城 Dungeon</label><input type="text" id="f-map-dungeon">
+      <label>特殊 Special</label><input type="text" id="f-map-special">
+      <label>塔 Tower</label><input type="text" id="f-map-tower">
+      <label>圍城 Siege</label><input type="text" id="f-map-siege">
+      <label>城堡 Castle</label><input type="text" id="f-map-castle">
+      <label>最後戰鬥地圖</label><input type="text" id="f-last-battle">
+    </div>
+    <div class="section-title mt">🏰 圍城戰 (Siege)</div>
+    <div class="form-grid">
+      <label>進行中</label><select id="f-siege-active"><option value="false">否</option><option value="true">是</option></select>
+      <label>城門已破</label><select id="f-siege-gate"><option value="false">否</option><option value="true">是</option></select>
+      <label>塔樓已破</label><select id="f-siege-tower"><option value="false">否</option><option value="true">是</option></select>
+      <label>城門 HP</label><input type="number" id="f-siege-gate-hp">
+      <label>塔樓 HP</label><input type="number" id="f-siege-tower-hp">
+      <label>擊殺數</label><input type="number" id="f-siege-kills" min="0">
+      <label>結果</label><select id="f-siege-result"><option value="">無</option><option value="win">勝利</option><option value="lose">失敗</option></select>
+      <label>所屬城市</label><input type="text" id="f-siege-city">
+      <label>勝利城市</label><input type="text" id="f-siege-victory-city">
+    </div>
+    <div class="section-title mt">🏰 城堡守衛 (Castle Guard)</div>
+    <div id="castle-guard-info" class="info-text">無資料</div>
+    <div class="section-title mt">🏆 進度標記</div>
+    <div class="form-grid">
+      <label>血之誓約</label><input type="text" id="f-blood-pledge">
+      <label>珊娜世界</label><select id="f-sherine-world"><option value="false">否</option><option value="true">是</option></select>
+      <label>擊敗傑尼斯</label><select id="f-pride-beat"><option value="false">否</option><option value="true">是</option></select>
+      <label>惡魔神殿</label><select id="f-demon-temple"><option value="false">否</option><option value="true">是</option></select>
+      <label>火焰親和</label><input type="number" id="f-flame-affinity" min="0">
+      <label>試煉階段</label><input type="number" id="f-trial-stage" min="0">
+      <label>伊士麥爾帳號</label><select id="f-ismael-used"><option value="false">否</option><option value="true">是</option></select>
+    </div>
+    <div class="section-title mt">🧪 異常狀態 (Statuses)</div>
+    <div class="form-grid" id="statuses-grid">
+      <!-- Populated by JS -->
+    </div>
+    <div class="section-title mt">⏱️ 冷卻時間 (Cooldowns)</div>
+    <div class="form-grid" id="cds-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════ CONFIG ═══════════════════ -->
+  <div class="tab-content" id="tab-config">
+    <div class="section-title">⚙️ 戰鬥設定</div>
+    <div class="form-grid">
+      <label>自動喝藥水 ID</label><input type="text" id="f-cfg-pot">
+      <label>HP 閾值 (%)</label><input type="number" id="f-cfg-pot-hp" min="0" max="100">
+      <label>自動購買藥水</label><select id="f-cfg-auto-buy-pot"><option value="false">關</option><option value="true">開</option></select>
+      <label>攻擊技能 ID</label><input type="text" id="f-cfg-sel-atk">
+      <label>攻擊 MP 閾值 (%)</label><input type="number" id="f-cfg-mp-atk" min="0" max="100">
+      <label>治癒技能 ID</label><input type="text" id="f-cfg-sel-heal">
+      <label>治癒 HP 閾值 (%)</label><input type="number" id="f-cfg-mp-heal" min="0" max="100">
+      <label>轉換技能 ID</label><input type="text" id="f-cfg-sel-convert">
+      <label>轉換 HP 閾值 (%)</label><input type="number" id="f-cfg-hp-convert" min="0" max="100">
+    </div>
+    <div class="section-title mt">🌀 自動 Buff</div>
+    <div class="form-grid" id="auto-buff-grid">
+      <!-- Populated by JS -->
+    </div>
+    <div class="section-title mt">🏪 Pandora 商店</div>
+    <div class="form-grid">
+      <label>物品 ID</label><input type="text" id="f-pandora-id">
+      <label>價格 (G)</label><input type="number" id="f-pandora-price">
+      <label>重量</label><input type="number" id="f-pandora-weight">
+    </div>
+    <div class="section-title mt">📋 垃圾物品偏好 (<span id="junk-count">0</span>)</div>
+    <div id="junk-list" class="junk-list"></div>
+  </div>
+
+  <!-- ═══════════════════ SLOTS ═══════════════════ -->
+  <div class="tab-content" id="tab-slots">
+    <div class="section-title">📦 存檔槽管理</div>
+    <div id="slot-list" class="slot-list"></div>
+    <div class="section-title mt">⚡ 快速預設</div>
+    <div class="quick-actions">
+      <button class="btn btn-preset" data-preset="max-gold">💰 全金</button>
+      <button class="btn btn-preset" data-preset="max-pots">🧪 9999藥水</button>
+      <button class="btn btn-preset" data-preset="max-level">⭐ 滿等</button>
+      <button class="btn btn-preset" data-preset="max-stats">💪 滿能力</button>
+      <button class="btn btn-preset" data-preset="max-hpmp">❤️ 滿HP/MP</button>
+      <button class="btn btn-preset" data-preset="clear-buffs">🌀 清Buff</button>
+      <button class="btn btn-preset" data-preset="reset-cd">⏱️ 清冷卻</button>
+      <button class="btn btn-preset" data-preset="clear-statuses">💀 清異常</button>
+      <button class="btn btn-preset" data-preset="bless-all">✨ 全祝福</button>
+      <button class="btn btn-preset" data-preset="unlock-inv">🔓 解鎖全部</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ JSON ═══════════════════ -->
+  <div class="tab-content" id="tab-json">
+    <div class="section-title">{ } JSON 直接編輯</div>
+    <textarea id="json-editor" class="json-editor" placeholder="貼上完整 JSON 存檔..."></textarea>
+    <div class="json-actions">
+      <button class="btn btn-primary btn-sm" id="btn-apply-json">✅ 套用 JSON</button>
+      <button class="btn btn-secondary btn-sm" id="btn-load-json">📥 載入至編輯器</button>
+      <button class="btn btn-secondary btn-sm" id="btn-format-json">🎨 格式化</button>
+      <button class="btn btn-secondary btn-sm" id="btn-validate-json">✔️ 驗證</button>
+    </div>
+    <div id="json-status" class="json-status"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <button class="btn btn-danger" id="btn-reset">🔄 重置</button>
+    <button class="btn btn-secondary" id="btn-load">📥 重載</button>
+    <button class="btn btn-primary" id="btn-save">💾 儲存</button>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+<script src="popup.js"></script>
+</body>
+</html>
