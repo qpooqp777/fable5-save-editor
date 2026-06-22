@@ -53,7 +53,9 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .sort-btn:hover { border-color:var(--primary)!important; color:var(--primary)!important; }
 .sort-btn.active { background:#1f3a5f!important; border-color:var(--primary)!important; color:var(--primary)!important; }
 
-.inv-summary { font-size:10px; color:var(--text-muted); margin-top:4px; }
+.inv-summary { font-size:10px; color:var(--text-muted); margin-top:4px; display:flex; align-items:center; gap:6px; }
+.inv-check,.inv-sel-all{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--text-muted);cursor:pointer}
+.inv-check input[type=checkbox],.inv-sel-all input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--warning)}
 .inv-toolbar { margin-bottom:8px; }
 
 /* Item List */
@@ -101,6 +103,15 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .skill-list { display:flex; flex-wrap:wrap; gap:4px; max-height:180px; overflow-y:auto; }
 .skill-chip { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:3px 8px; font-size:10px; display:flex; align-items:center; gap:4px; }
 .skill-chip .skill-name { color:var(--warning); }
+.skill-chip .skill-cn { color:var(--text-secondary); font-size:10px; margin-left:4px; }
+.skill-search-add { display:flex; gap:4px; position:relative; }
+.skill-search-add input { flex:1; }
+.skill-dropdown { display:none; position:absolute; background:var(--bg2); border:1px solid var(--border); border-radius:4px; max-height:200px; overflow-y:auto; z-index:9999; min-width:200px; box-shadow:0 4px 12px rgba(0,0,0,.5); }
+.skill-dropdown.open { display:block; }
+.skill-dd-item { padding:5px 8px; cursor:pointer; font-size:11px; display:flex; justify-content:space-between; gap:6px; }
+.skill-dd-item:hover { background:var(--bg3); }
+.skill-dd-cn { color:var(--text); }
+.skill-dd-id { color:var(--text-muted); font-size:9px; }
 .skill-chip .skill-del { color:var(--danger); cursor:pointer; opacity:.6; font-size:12px; }
 .skill-chip .skill-del:hover { opacity:1; }
 .skill-input-row { display:flex; gap:6px; }

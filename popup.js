@@ -33,6 +33,74 @@ const BUFF_NAMES = {
   sk_berserk:'💢狂暴'
 };
 
+const SKILL_NAMES = {
+  sk_abs_barrier:'絕對屏障', sk_antidote:'解毒術', sk_aurora:'極光雷電',
+  sk_berserk:'狂暴術', sk_blaze:'烈炎術', sk_bless_wpn:'祝福魔法武器',
+  sk_blizzard:'冰雪暴', sk_blizzard_storm:'冰雪颶風', sk_break:'壞物術',
+  sk_cancel:'魔法相消術', sk_charm:'迷魅術', sk_chill:'寒冰氣息',
+  sk_cold_shiver:'寒冷戰慄', sk_counter_barrier:'反擊屏障',
+  sk_dark_armorbreak:'破壞盔甲', sk_dark_blind:'闇盲咒術',
+  sk_dark_burn:'燃燒鬥志', sk_dark_crit:'會心一擊',
+  sk_dark_dex:'敏捷提升', sk_dark_dodge:'暗影閃避',
+  sk_dark_double:'雙重破壞', sk_dark_erup:'迴避提升',
+  sk_dark_fang:'暗影之牙', sk_dark_mrup:'影之防護',
+  sk_dark_poison:'附加劇毒', sk_dark_poisonres:'毒性抵抗',
+  sk_dark_refine:'提煉魔石', sk_dark_shadow:'黑闇之影',
+  sk_dark_stealth:'暗隱術', sk_dark_str:'力量提升',
+  sk_dark_walkhaste:'行走加速', sk_dex_up:'通暢氣脈術',
+  sk_disease:'疾病術', sk_disintegrate:'究極光裂術',
+  sk_earthquake:'地裂術', sk_elf_attrfire:'屬性之火',
+  sk_elf_blazewpn:'烈炎武器', sk_elf_dancefire:'舞躍之火',
+  sk_elf_earthbless:'大地的祝福', sk_elf_earthguard:'大地防護',
+  sk_elf_earthshield:'大地屏障', sk_elf_eleres:'屬性防禦',
+  sk_elf_energyboost:'能量激發', sk_elf_firewpn:'火焰武器',
+  sk_elf_flamesoul:'烈焰之魂', sk_elf_groundtrap:'地面障礙',
+  sk_elf_lifebless:'生命的祝福', sk_elf_lifespring:'生命之泉',
+  sk_elf_magicerase:'魔法消除', sk_elf_mind:'心靈轉換',
+  sk_elf_mirror:'鏡反射', sk_elf_mr:'魔法防禦',
+  sk_elf_physboost:'體能激發', sk_elf_purify:'淨化精神',
+  sk_elf_release:'釋放元素', sk_elf_seal:'封印禁地',
+  sk_elf_singleres:'單屬性防禦', sk_elf_soul:'魂體轉換',
+  sk_elf_steelguard:'鋼鐵防護', sk_elf_stormeye:'暴風之眼',
+  sk_elf_stormshot:'暴風神射', sk_elf_summon:'召喚精靈',
+  sk_elf_summon2:'上級精靈', sk_elf_triple:'三連射',
+  sk_elf_watervital:'水之元氣', sk_elf_winddash:'風之疾走',
+  sk_elf_windshot:'風之神射', sk_elf_worldtree:'世界樹的呼喚',
+  sk_ench_wpn:'擬似魔法武器', sk_energy_sense:'能量感測',
+  sk_fire_prison:'火牢', sk_fire_storm:'火風暴',
+  sk_firearrow:'火箭', sk_fireball:'燃燒的火球',
+  sk_full_heal:'全部治癒術', sk_greater_haste:'強力加速術',
+  sk_haste_spell:'加速術', sk_heal_mid:'中級治癒術',
+  sk_heal1:'初級治癒術', sk_heal2:'高級治癒術',
+  sk_hell_fang:'地獄之牙',
+  sk_helm_dex1:'敏盔：氣脈通暢術', sk_helm_dex2:'敏盔：加速術',
+  sk_helm_heal1:'治盔：初級治癒術', sk_helm_heal2:'治盔：中級治癒術',
+  sk_helm_str1:'力盔：擬似魔法武器', sk_helm_str2:'力盔：無所遁形術',
+  sk_helm_str3:'力盔：體魄強健術',
+  sk_holy_barrier:'聖結界', sk_holy_dash:'神聖疾走',
+  sk_holy_light:'聖潔之光', sk_holy_wpn:'神聖武器',
+  sk_ice_lance:'冰矛圍籬', sk_ice_spike:'冰錐',
+  sk_icearrow:'冰箭', sk_invisible:'隱身術',
+  sk_lightarrow:'光箭', sk_load_up:'負重強化',
+  sk_magic_shield:'魔法屏障', sk_mana_drain:'魔力奪取',
+  sk_meditation:'冥想術', sk_meteor:'流星雨',
+  sk_mummy_curse:'木乃伊的詛咒', sk_poison_curse:'毒咒',
+  sk_quake:'震裂術', sk_reduction_armor:'增幅防禦',
+  sk_regen:'體力回復術', sk_resurrection:'返生術',
+  sk_reveal:'無所遁形術', sk_rock_prison:'岩牢',
+  sk_seal:'魔法封印', sk_shield:'保護罩',
+  sk_shield2:'鎧甲護持',
+  sk_sleep_mist:'沉睡之霧', sk_slow:'緩速術',
+  sk_solid_shield:'堅固防護', sk_soul_up:'靈魂昇華',
+  sk_spike_armor:'尖刺盔甲', sk_str_up:'體魄強健術',
+  sk_summon:'召喚術', sk_sunlight:'日光術',
+  sk_teleport:'傳送術', sk_thunder:'極道落雷',
+  sk_thunder_storm:'雷霆風暴', sk_tornado:'龍捲風',
+  sk_undead_bane:'起死回生術', sk_vampire:'吸血鬼之吻',
+  sk_weaken:'弱化術', sk_windblade:'風刃',
+  sk_zombie:'隨從：人形殭屍'
+};
+
 const STATUS_NAMES = {
   stun:'⚡暈眩', freeze:'❄️冰凍', stone:'🪨石化', poison:'☠️中毒',
   burn:'🔥燃燒', scald:'♨️燙傷', bleed:'🩸流血', sleep:'😴睡眠',
@@ -253,6 +321,19 @@ function initInvToolbar() {
       btn.classList.add('active'); invSort=btn.dataset.sort; renderInventory();
     });
   });
+  // select all
+  document.getElementById('inv-sel-all').addEventListener('change', function() {
+    document.querySelectorAll('.inv-sel').forEach(cb => { cb.checked = this.checked; });
+  });
+  // batch delete
+  document.getElementById('btn-del-selected').addEventListener('click', () => {
+    const p=saveData?.p; if(!p) return;
+    const toDelete = new Set(Array.from(document.querySelectorAll('.inv-sel:checked')).map(cb=>parseInt(cb.dataset.idx)));
+    if(!toDelete.size) return;
+    if(!confirm(`確定刪除 ${toDelete.size} 項物品？`)) return;
+    p.inv = p.inv.filter((_,i)=>!toDelete.has(i));
+    renderInventory();
+  });
 }
 
 function getFilteredInv() {
@@ -289,6 +370,7 @@ function renderInventory() {
     const catLabel = ITEM_CATS[prefix]||'';
     card.innerHTML = `
       <div class="item-card-header">
+        <label class="inv-check"><input type="checkbox" class="inv-sel" data-idx="${item._idx}"></label>
         <span class="item-card-id">${catLabel} ${item.id}</span>
         <span class="item-card-uid">${item.uid}</span>
         <button class="item-del" data-idx="${item._idx}" title="刪除">✕</button>
@@ -379,13 +461,14 @@ function renderEquipment() {
 function renderSkills() {
   const p=saveData?.p; if(!p)return;
   const search=document.getElementById('skill-search')?.value?.toLowerCase()||'';
-  const skills=(p.skills||[]).filter(s=>!search||s.toLowerCase().includes(search));
+  const skills=(p.skills||[]).filter(s=>!search||s.toLowerCase().includes(search)||(SKILL_NAMES[s]||'').includes(search));
   document.getElementById('skill-count').textContent=p.skills?.length||0;
   const c=document.getElementById('skills-list'); c.innerHTML='';
   skills.forEach((sk,idx)=>{
     const realIdx=p.skills.indexOf(sk);
     const chip=document.createElement('div'); chip.className='skill-chip';
-    chip.innerHTML=`<span class="skill-name">${sk}</span><span class="skill-del" data-idx="${realIdx}">✕</span>`;
+    const cn=SKILL_NAMES[sk]||'';
+    chip.innerHTML=`<span class="skill-name">${sk}</span>${cn?'<span class="skill-cn">'+cn+'</span>':''}<span class="skill-del" data-idx="${realIdx}">✕</span>`;
     c.appendChild(chip);
   });
   c.querySelectorAll('.skill-del').forEach(btn=>{
@@ -517,13 +600,40 @@ function initActions() {
   document.getElementById('btn-unlock-all').addEventListener('click',()=>{ if(!saveData)return; saveData.p.inv.forEach(i=>i.lock=false); renderInventory(); showToast('已全部解鎖','success'); });
 
   // Add skill
+  const skillInput = document.getElementById('new-skill-id');
+  const skillDropdown = document.getElementById('skill-dropdown');
   document.getElementById('btn-add-skill').addEventListener('click',()=>{
     if(!saveData){showToast('請先匯入','error');return;}
-    const id=document.getElementById('new-skill-id').value.trim(); if(!id){showToast('請輸入ID','error');return;}
-    if(!saveData.p.skills.includes(id)){saveData.p.skills.push(id);renderSkills();showToast('已新增：'+id,'success');}
+    const id=skillInput.value.trim(); if(!id){showToast('請輸入ID','error');return;}
+    // accept dropdown selected value
+    const realId = skillInput.dataset.sid || id;
+    if(!saveData.p.skills.includes(realId)){saveData.p.skills.push(realId);renderSkills();showToast('已新增：'+realId+(SKILL_NAMES[realId]?' ('+SKILL_NAMES[realId]+')':''),'success');}
     else showToast('技能已存在','error');
-    document.getElementById('new-skill-id').value='';
+    skillInput.value=''; skillInput.dataset.sid=''; skillDropdown.classList.remove('open');
   });
+  // skill search dropdown
+  skillInput.addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    if(q.length < 1) { skillDropdown.classList.remove('open'); return; }
+    const matches = Object.entries(SKILL_NAMES).filter(([k,v])=> k.toLowerCase().includes(q) || v.includes(q)).slice(0,10);
+    if(!matches.length) { skillDropdown.classList.remove('open'); return; }
+    skillDropdown.innerHTML = matches.map(([k,v])=>`<div class="skill-dd-item" data-sid="${k}"><span class="skill-dd-cn">${v}</span><span class="skill-dd-id">${k}</span></div>`).join('');
+    // position fixed below input
+    const rect = skillInput.getBoundingClientRect();
+    skillDropdown.style.top = rect.bottom + 'px';
+    skillDropdown.style.left = rect.left + 'px';
+    skillDropdown.style.width = rect.width + 'px';
+    skillDropdown.classList.add('open');
+  });
+  skillDropdown.addEventListener('click', function(e) {
+    const item = e.target.closest('.skill-dd-item');
+    if (!item) return;
+    const sid = item.dataset.sid;
+    skillInput.value = sid + ' (' + SKILL_NAMES[sid] + ')';
+    skillInput.dataset.sid = sid;
+    skillDropdown.classList.remove('open');
+  });
+  document.addEventListener('click', function(e) { if(!e.target.closest('.skill-search-add')&&!e.target.closest('.skill-dropdown')) skillDropdown.classList.remove('open'); });
 
   // Clear poly
   document.getElementById('btn-clear-poly').addEventListener('click',()=>{ if(!saveData)return; saveData.p.poly=null; renderAll(); showToast('已清除變身','success'); });

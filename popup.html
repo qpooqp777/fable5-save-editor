@@ -178,6 +178,7 @@
         <button class="btn btn-sm sort-btn" data-sort="lock">鎖定</button>
       </div>
       <div class="inv-summary">
+        <label class="inv-sel-all"><input type="checkbox" id="inv-sel-all">全選</label>
         顯示 <span id="inv-show-count">0</span> / <span id="inv-total-count">0</span> 項
         &nbsp;|&nbsp; 總數量 <span id="inv-total-qty">0</span>
       </div>
@@ -185,6 +186,7 @@
     <div id="inv-list" class="item-list"></div>
     <div class="inv-actions-bar">
       <button class="btn btn-secondary btn-sm" id="btn-add-item">+ 新增物品</button>
+      <button class="btn btn-danger btn-sm" id="btn-del-selected">🗑️ 刪除勾選</button>
       <button class="btn btn-danger btn-sm" id="btn-del-junk">🗑️ 刪除垃圾</button>
       <button class="btn btn-secondary btn-sm" id="btn-unlock-all">🔓 全部解鎖</button>
     </div>
@@ -207,9 +209,11 @@
       <input type="text" id="skill-search" placeholder="🔍 搜尋技能..." class="search-input">
     </div>
     <div id="skills-list" class="skill-list"></div>
-    <div class="skill-input-row mt">
-      <input type="text" id="new-skill-id" placeholder="輸入技能 ID（如 sk_fireball）">
-      <button class="btn btn-primary btn-sm" id="btn-add-skill">+ 新增</button>
+    <div class="skill-input-row mt" style="flex-direction:column;align-items:stretch">
+      <div class="skill-search-add">
+        <input type="text" id="new-skill-id" placeholder="🔍 搜尋或輸入技能名稱 / ID" autocomplete="off">
+        <button class="btn btn-primary btn-sm" id="btn-add-skill">+ 新增</button>
+      </div>
     </div>
     <div class="section-title mt">🌀 Buff 效果 (<span id="buff-count">0</span> 活躍)</div>
     <div class="search-row mb">
@@ -341,6 +345,7 @@
     <button class="btn btn-primary" id="btn-save">💾 儲存</button>
   </div>
   <div class="toast" id="toast"></div>
+  <div id="skill-dropdown" class="skill-dropdown"></div>
 </div>
 <script src="popup.js"></script>
 </body>
