@@ -91,7 +91,10 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .eq-slot-item { font-size:11px; color:var(--warning); font-weight:600; }
 .eq-slot-empty { font-size:10px; color:var(--text-muted); font-style:italic; }
 .eq-slot-fields { display:flex; flex-direction:column; gap:2px; margin-top:3px; }
-.eq-slot-fields input { padding:2px 5px; font-size:10px; }
+.eq-slot-fields input[type=text],.eq-slot-fields input[type=number] { padding:2px 5px; font-size:10px; }
+.eq-slot-fields .eq-checks { display:flex; gap:6px; margin-top:1px; }
+.eq-check { font-size:10px; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; gap:2px; }
+.eq-check input[type=checkbox] { width:13px; height:13px; cursor:pointer; accent-color:var(--warning); }
 .eq-slot-tags { display:flex; gap:3px; flex-wrap:wrap; margin-top:2px; }
 
 /* Skill List */

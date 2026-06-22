@@ -353,6 +353,9 @@ function renderEquipment() {
         <input type="text" data-eq="${key}" data-field="id" value="${item?.id||''}" placeholder="物品 ID">
         <input type="number" data-eq="${key}" data-field="en" value="${item?.en||0}" min="0" placeholder="強化">
         <input type="text" data-eq="${key}" data-field="attr" value="${item?.attr&&item.attr!==false?item.attr:''}" placeholder="屬性">
+        <div class="eq-checks"><label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="bless" ${item?.bless?'checked':''}>祝福</label>
+        <label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="anc" ${item?.anc?'checked':''}>遠古</label>
+        <label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="lock" ${item?.lock?'checked':''}>🔒</label></div>
       </div>
       <div class="eq-slot-tags">${tagsHtml}</div>`;
     c.appendChild(slot);
@@ -364,6 +367,9 @@ function renderEquipment() {
       if(field==='id'){if(input.value)p.eq[key].id=input.value;else p.eq[key]=null;}
       else if(field==='en')p.eq[key].en=parseInt(input.value)||0;
       else if(field==='attr')p.eq[key].attr=input.value||false;
+      else if(field==='bless')p.eq[key].bless=input.checked;
+      else if(field==='anc')p.eq[key].anc=input.checked;
+      else if(field==='lock')p.eq[key].lock=input.checked;
       renderEquipment();
     });
   });
