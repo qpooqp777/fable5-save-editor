@@ -238,7 +238,7 @@ function applyAllFields() {
   p.prideBeatJenis=bool('f-pride-beat'); p.demonTempleOpen=bool('f-demon-temple');
   p.flameAffinity=num('f-flame-affinity'); p.trialStage=num('f-trial-stage'); p.ismaelAccUsed=bool('f-ismael-used');
 
-  if (p.config) { p.config.setPot=val('f-cfg-pot'); p.config.setHpPot=num('f-cfg-pot-hp'); p.config.setAutoBuyPot=bool('f-cfg-auto-buy-pot'); p.config.selAtkSkill=val('f-cfg-sel-atk'); p.config.setMpAtk=num('f-cfg-mp-atk'); p.config.selHealSkill=val('f-cfg-sel-heal'); p.config.setMpHeal=num('f-cfg-mp-heal'); p.config.selConvertSkill=val('f-cfg-sel-convert'); p.config.setHpConvert=num('f-cfg-hp-convert'); }
+  if (p.config) { p.config.setPot=val('f-cfg-pot'); p.config.setHpPot=val('f-cfg-pot-hp'); p.config.setAutoBuyPot=bool('f-cfg-auto-buy-pot'); p.config.selAtkSkill=val('f-cfg-sel-atk'); p.config.setMpAtk=val('f-cfg-mp-atk'); p.config.selHealSkill=val('f-cfg-sel-heal'); p.config.setMpHeal=val('f-cfg-mp-heal'); p.config.selConvertSkill=val('f-cfg-sel-convert'); p.config.setHpConvert=val('f-cfg-hp-convert'); }
   if (p.pandoraMarket) { p.pandoraMarket.id=val('f-pandora-id'); p.pandoraMarket.price=num('f-pandora-price'); p.pandoraMarket.weight=num('f-pandora-weight'); }
   if (p.summon) { p.summon.skId=val('f-summon-skid'); p.summon.n=val('f-summon-n'); p.summon.cd=num('f-summon-cd'); }
 }
@@ -498,10 +498,10 @@ function initActions() {
     } catch { showToast('JSON 格式錯誤','error'); } e.target.value='';
   });
 
-  // File export
+  // File export — use compact JSON (no indentation) to match game format
   document.getElementById('btn-export-file').addEventListener('click',()=>{
     applyAllFields(); if(!saveData){showToast('無資料','error');return;}
-    const blob=new Blob([JSON.stringify(saveData,null,2)],{type:'application/json'});
+    const blob=new Blob([JSON.stringify(saveData)],{type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fable5_save.json';a.click();showToast('已匯出','success');
   });
 
@@ -580,7 +580,7 @@ function applyPreset(preset) {
 
 // ─── HELPERS ──────────────────────────────────────────────────
 function val(id){const el=document.getElementById(id);return el?el.value:'';}
-function num(id){return parseInt(document.getElementById(id)?.value)||0;}
+function num(id){const el=document.getElementById(id);if(!el)return 0;const v=el.value.trim();if(v==='')return 0;const n=Number(v);return Number.isNaN(n)?0:n;}
 function bool(id){return document.getElementById(id)?.value==='true';}
 function setVal(id,v){const el=document.getElementById(id);if(!el)return;if(el.tagName==='INPUT'&&el.type==='checkbox')el.checked=!!v;else el.value=v??'';}
 function randUid(){return Math.random().toString(36).slice(2,11);}
