@@ -218,6 +218,7 @@ function renderAll() {
   // Character
   setVal('f-cls', p.cls); setVal('f-name', p.name||''); setVal('f-avatar', p.avatar||'');
   setVal('f-lv', p.lv); setVal('f-exp', p.exp); setVal('f-gold', p.gold);
+  setVal('f-classic', p.classicMode?'true':'false'); setVal('f-panacea-used', p.panaceaUsed||0);
   setVal('f-hp', p.hp); setVal('f-mhp', p.mhp); setVal('f-mp', p.mp); setVal('f-mmp', p.mmp);
   setVal('f-dead', p.dead?'true':'false');
 
@@ -281,6 +282,7 @@ function applyAllFields() {
   const p = saveData.p, d = p.d;
   p.cls=val('f-cls'); p.name=val('f-name')||null; p.avatar=val('f-avatar');
   p.lv=num('f-lv'); p.exp=num('f-exp'); p.gold=num('f-gold');
+  p.classicMode=bool('f-classic'); p.panaceaUsed=num('f-panacea-used');
   p.hp=num('f-hp'); p.mhp=num('f-mhp'); p.mp=num('f-mp'); p.mmp=num('f-mmp');
   p.dead=bool('f-dead');
 
