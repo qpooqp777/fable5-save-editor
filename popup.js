@@ -371,16 +371,13 @@ function renderInventory() {
     const prefix = item.id.split('_')[0];
     const catLabel = ITEM_CATS[prefix]||'';
     card.innerHTML = `
-      <div class="item-card-body">
-        <div class="item-icon-wrap">${itemIconHTML(item.id)}</div>
-        <div class="item-card-info">
-          <div class="item-card-header">
-            <label class="inv-check"><input type="checkbox" class="inv-sel" data-idx="${item._idx}"></label>
-            <span class="item-card-id">${catLabel} ${item.id}</span>
-            <button class="item-del" data-idx="${item._idx}" title="刪除">✕</button>
-          </div>
-          <div class="item-card-name">${getItemDisplayName(item.id)||'??'}</div>
-        </div>
+      <div class="item-card-header">
+        ${itemIconHTML(item.id)}
+        <label class="inv-check"><input type="checkbox" class="inv-sel" data-idx="${item._idx}"></label>
+        <span class="item-card-id">${catLabel} ${item.id}</span>
+        <span class="item-card-dbname">${getItemDisplayName(item.id)||''}</span>
+        <span class="item-card-uid">${item.uid}</span>
+        <button class="item-del" data-idx="${item._idx}" title="刪除">✕</button>
       </div>
       <div class="item-card-row">
         <input class="w-id" type="text" value="${item.id}" data-field="id" data-idx="${item._idx}" placeholder="ID">
