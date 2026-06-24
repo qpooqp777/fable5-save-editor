@@ -67,13 +67,19 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 
 /* Item List */
 .item-list { display:flex; flex-direction:column; gap:4px; max-height:260px; overflow-y:auto; }
-.item-card { background:var(--bg3); border:1px solid var(--border); border-radius:5px; padding:6px 8px; position:relative; font-size:11px; transition: border-color .15s; }
+.item-card { background:var(--bg3); border:1px solid var(--border); border-radius:5px; position:relative; font-size:11px; transition: border-color .15s; overflow:hidden; }
 .item-card:hover { border-color: var(--primary); }
 .item-card.highlight { border-color: var(--warning); background: #2a2518; }
-.item-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
-.item-card-id { color:var(--warning); font-weight:600; font-size:11px; }
+.item-card-body { display:flex; align-items:flex-start; gap:8px; padding:6px 8px; }
+.item-icon-wrap { flex-shrink:0; width:48px; height:48px; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:4px; background:var(--bg2); border:1px solid var(--border); }
+.inv-item-icon { width:48px; height:48px; object-fit:contain; image-rendering:auto; }
+.item-icon-fallback { font-size:28px; }
+.item-card-info { flex:1; min-width:0; }
+.item-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; }
+.item-card-id { color:var(--warning); font-weight:600; font-size:10px; }
+.item-card-name { color:var(--text); font-size:14px; font-weight:700; line-height:1.3; }
 .item-card-uid { color:var(--text-muted); font-size:9px; font-family:monospace; }
-.item-card-row { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:2px; }
+.item-card-row { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:4px; padding:0 8px 6px; }
 .item-card-row input { width:auto; padding:2px 5px; font-size:10px; }
 .item-card-row input.w-id { width:100px; }
 .item-card-row input.w-cnt { width:55px; }
@@ -2765,12 +2771,16 @@ function renderInventory() {
     const prefix = item.id.split('_')[0];
     const catLabel = ITEM_CATS[prefix]||'';
     card.innerHTML = `
-      <div class="item-card-header">
-        <label class="inv-check"><input type="checkbox" class="inv-sel" data-idx="${item._idx}"></label>
-        <span class="item-card-id">${catLabel} ${item.id}</span>
-        <span class="item-card-dbname">${getItemDisplayName(item.id)||''}</span>
-        <span class="item-card-uid">${item.uid}</span>
-        <button class="item-del" data-idx="${item._idx}" title="刪除">✕</button>
+      <div class="item-card-body">
+        <div class="item-icon-wrap">${itemIconHTML(item.id)}</div>
+        <div class="item-card-info">
+          <div class="item-card-header">
+            <label class="inv-check"><input type="checkbox" class="inv-sel" data-idx="${item._idx}"></label>
+            <span class="item-card-id">${catLabel} ${item.id}</span>
+            <button class="item-del" data-idx="${item._idx}" title="刪除">✕</button>
+          </div>
+          <div class="item-card-name">${getItemDisplayName(item.id)||'??'}</div>
+        </div>
       </div>
       <div class="item-card-row">
         <input class="w-id" type="text" value="${item.id}" data-field="id" data-idx="${item._idx}" placeholder="ID">
@@ -3248,6 +3258,20 @@ function confirmAddItem() {
   closeAddItemModal();
   const dbn=ITEM_DB[modalSelectedItemId]?.n||modalSelectedItemId;
   showToast('✅ 已加入 '+dbn+' ×'+cnt,'success');
+}
+
+// ─── ESCAPE HELPER ─────────────────────────────────────────────
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+// ─── ITEM ICON ─────────────────────────────────────────────────
+const TYPE_ICON_DIR = {wpn:'weapons',arm:'armors',acc:'accessories',pot:'items',scroll:'items',misc:'items',etc:'items'};
+function itemIconHTML(id, cls) {
+  const info = ITEM_DB && ITEM_DB[id];
+  if (!info) return '<span class="item-icon-fallback">📦</span>';
+  const dir = TYPE_ICON_DIR[info.t] || 'items';
+  const src = 'assets/icons/' + dir + '/' + encodeURIComponent(info.n) + '.png';
+  const fallback = '📦';
+  return '<img src="' + src + '" alt="' + esc(info.n) + '" class="' + (cls||'inv-item-icon') + '" onerror="this.outerHTML=\'" + fallback + "\'>";
 }
 
 // ─── ITEM DB NAME LOOKUP FOR DISPLAY ───────────────────────────
