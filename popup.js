@@ -827,6 +827,50 @@ function selectModalItem(id) {
   // DB name
   document.getElementById('preview-db-name').textContent='\U0001f4e6 分類: '+(info.c||'未知');
 
+  // Stats (from ITEM_STATS)
+  const statsBox=document.getElementById('preview-stats-box');
+  const stats=ITEM_STATS[id]||{};
+  const t=info.t;
+  let statLines=[];
+  if(t==='wpn'){
+    if(stats.dmgS!=null) statLines.push({l:' Phys DMG',v:stats.dmgS});
+    if(stats.dmgL!=null) statLines.push({l:' Range DMG',v:stats.dmgL});
+    if(stats.hit!=null) statLines.push({l:' Hit',v:stats.hit});
+    if(stats.spd!=null) statLines.push({l:' Speed',v:stats.spd});
+    if(stats.w2h) statLines.push({l:' [2H] ',v:'雙手武器'});
+    if(stats.eff) statLines.push({l:' Eff: ',v:stats.eff});
+  } else if(t==='arm'){
+    if(stats.ac!=null) statLines.push({l:' AC',v:stats.ac});
+    if(stats.mmp!=null) statLines.push({l:' MP上限',v:'+'+stats.mmp});
+    if(stats.mpR!=null) statLines.push({l:' MP回',v:'+'+stats.mpR});
+    if(stats.mr!=null) statLines.push({l:' MR',v:'+'+stats.mr});
+    if(stats.mhp!=null) statLines.push({l:' HP上限',v:'+'+stats.mhp});
+    if(stats.slot) statLines.push({l:' Slot',v:stats.slot});
+  } else if(t==='acc'){
+    if(stats.ac!=null) statLines.push({l:' AC',v:stats.ac});
+    ['str','dex','int','con','wis','cha'].forEach(s=>{
+      if(stats[s]!=null){
+        const sign=stats[s]>0?'+':'';
+        statLines.push({l:' '+s.toUpperCase(),v:sign+stats[s]});
+      }
+    });
+    if(stats.mmp!=null) statLines.push({l:' MP上限',v:'+'+stats.mmp});
+    if(stats.mpR!=null) statLines.push({l:' MP回',v:'+'+stats.mpR});
+    if(stats.mr!=null) statLines.push({l:' MR',v:'+'+stats.mr});
+    if(stats.mhp!=null) statLines.push({l:' HP上限',v:'+'+stats.mhp});
+    ['resFire','resWater','resEarth','resWind'].forEach(r=>{
+      if(stats[r]!=null) statLines.push({l:' '+r.replace('res',''),v:'+'+stats[r]+'%'});
+    });
+  }
+  if(stats.req&&stats.req!=='all') statLines.push({l:' Req: ',v:stats.req});
+  if(statLines.length>0){
+    statsBox.style.display='block';
+    statsBox.innerHTML='<div class="preview-section-title">\U0001f4ca 能力數值</div>'+
+      statLines.map(s=>'<div class="stat-row"><span class="stat-label">'+s.l+'</span><span class="stat-value">'+s.v+'</span></div>').join('');
+  } else {
+    statsBox.style.display='none';
+  }
+
   // Generate UID
   document.getElementById('modal-param-uid').value=randUid();
   document.getElementById('modal-param-cnt').value=1;

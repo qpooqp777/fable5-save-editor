@@ -222,6 +222,10 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .preview-name { font-size:15px; font-weight:700; color:var(--warning); }
 .preview-type { font-size:9px; color:var(--text-muted); background:var(--bg); padding:1px 5px; border-radius:3px; }
 .preview-db-name { font-size:10px; color:var(--text-muted); padding-top:4px; border-top:1px solid var(--border); margin-top:2px; }
+.preview-stats-box { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:6px 8px; margin:6px 0; }
+.stat-row { display:flex; justify-content:space-between; align-items:center; padding:2px 0; font-size:11px; }
+.stat-label { color:var(--text-muted); font-weight:600; }
+.stat-value { color:var(--primary); font-family:monospace; font-weight:700; }
 .modal-footer { display:flex; justify-content:flex-end; gap:6px; padding:8px 12px; border-top:1px solid var(--border); }
 
 /* Item card enhancement - show DB name */
