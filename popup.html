@@ -350,7 +350,108 @@
   </div>
   <div class="toast" id="toast"></div>
   <div id="skill-dropdown" class="skill-dropdown"></div>
+
+<!-- ═══════════════════ ADD ITEM MODAL ═══════════════════ -->
+<div id="item-modal-overlay" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">➕ 新增物品到背包</span>
+      <button class="modal-close" id="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-search-row">
+        <input type="text" id="modal-item-search" placeholder="🔍 搜尋物品名稱 / ID..." autocomplete="off" class="search-input">
+        <select id="modal-cat-filter" class="cat-filter">
+          <option value="">全部分類</option>
+          <option value="武器">⚔️ 武器</option>
+          <option value="鎧甲">🛡️ 鎧甲</option>
+          <option value="護甲">🛡️ 護甲</option>
+          <option value="頭盔">🪖 頭盔</option>
+          <option value="盾牌">🛡️ 盾牌</option>
+          <option value="披風">🧥 披風</option>
+          <option value="手套">🧤 手套</option>
+          <option value="靴子">👢 靴子</option>
+          <option value="飾品">💍 飾品</option>
+          <option value="項鏈">📿 項鏈</option>
+          <option value="腰帶">🪢 腰帶</option>
+          <option value="戒指">💍 戒指</option>
+          <option value="法術">📜 法術</option>
+          <option value="卷軸">📜 卷軸</option>
+          <option value="藥水">🧪 藥水</option>
+          <option value="萬靈藥">🧪 萬靈藥</option>
+          <option value="道具">📦 道具</option>
+          <option value="材料">📦 材料</option>
+          <option value="任務">📋 任務</option>
+        </select>
+      </div>
+      <div class="modal-item-list" id="modal-item-list"></div>
+      <div class="modal-item-preview" id="modal-item-preview" style="display:none">
+        <div class="preview-row">
+          <span class="preview-label">已選</span>
+          <span id="preview-name" class="preview-name"></span>
+          <span id="preview-id" class="preview-id"></span>
+          <span id="preview-type" class="preview-type"></span>
+          <span id="preview-legend" class="tag tag-bless" style="display:none">傳說</span>
+        </div>
+        <div class="preview-params">
+          <div class="param-row">
+            <label>數量</label><input type="number" id="modal-param-cnt" value="1" min="1" class="param-input">
+            <label>強化</label><input type="number" id="modal-param-en" value="0" min="0" max="20" class="param-input param-narrow">
+            <label>唯一ID</label><input type="text" id="modal-param-uid" class="param-input" placeholder="自動">
+          </div>
+          <div class="param-row">
+            <label class="param-check"><input type="checkbox" id="modal-param-bless"> 祝福</label>
+            <label class="param-check"><input type="checkbox" id="modal-param-anc"> 遠古</label>
+            <label style="font-size:10px;color:var(--text-muted)">屬性</label>
+            <select id="modal-param-attr-ele" style="width:68px;padding:2px 5px;font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text)">
+              <option value="">無</option>
+              <option value="fire">🔥 火</option>
+              <option value="water">💧 水</option>
+              <option value="wind">🌪️ 風</option>
+              <option value="earth">⛰️ 地</option>
+              <option value="ice">❄️ 冰</option>
+              <option value="light">✨ 光</option>
+              <option value="dark">🌑 暗</option>
+            </select>
+            <label style="font-size:10px;color:var(--text-muted);margin-left:2px">Lv</label>
+            <select id="modal-param-attr-lv" style="width:44px;padding:2px 5px;font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text)">
+              <option value="">-</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+            <label class="param-check"><input type="checkbox" id="modal-param-lock"> 鎖定</label>
+            <label class="param-check"><input type="checkbox" id="modal-param-junk"> 垃圾</label>
+          </div>
+          <div class="param-row">
+            <label>套裝</label>
+            <select id="modal-param-seteff" style="width:100px;padding:2px 5px;font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text)">
+              <option value="">無</option>
+              <option value="紅獅">🦁 紅獅</option>
+              <option value="白鳥">🕊️ 白鳥</option>
+              <option value="鐵衛">⚙️ 鐵衛</option>
+              <option value="麗人">💎 麗人</option>
+              <option value="疾風">🌪️ 疾風</option>
+              <option value="月光">🌙 月光</option>
+              <option value="學徒">📖 學徒</option>
+              <option value="魔女">🧙 魔女</option>
+              <option value="暗影">🌑 暗影</option>
+            </select>
+          </div>
+        </div>
+        <div class="preview-db-name" id="preview-db-name"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" id="modal-cancel-btn">取消</button>
+      <button class="btn btn-primary btn-sm" id="modal-confirm-btn" disabled>✅ 加入背包 (最上方)</button>
+    </div>
+  </div>
 </div>
+</div>
+<script src="item_db.js"></script>
 <script src="popup.js"></script>
 </body>
 </html>

@@ -161,7 +161,7 @@ const AUTO_BUFF_KEYS = [
 document.addEventListener('DOMContentLoaded', () => {
   loadSlots(); renderSlots();
   if (slots.length > 0 && slots[currentSlot]) loadSlot(currentSlot);
-  initTabs(); initActions(); initPresets(); initInvToolbar(); initDerivedGrid();
+  initTabs(); initActions(); initPresets(); initInvToolbar(); initModal(); initDerivedGrid();
 });
 
 // ─── TABS ─────────────────────────────────────────────────────
@@ -371,11 +371,16 @@ function renderInventory() {
     const prefix = item.id.split('_')[0];
     const catLabel = ITEM_CATS[prefix]||'';
     card.innerHTML = `
-      <div class="item-card-header">
-        <label class="inv-check"><input type="checkbox" class="inv-sel" data-idx="${item._idx}"></label>
-        <span class="item-card-id">${catLabel} ${item.id}</span>
-        <span class="item-card-uid">${item.uid}</span>
-        <button class="item-del" data-idx="${item._idx}" title="刪除">✕</button>
+      <div class="item-card-body">
+        <div class="item-icon-wrap">${itemIconHTML(item.id)}</div>
+        <div class="item-card-info">
+          <div class="item-card-header">
+            <label class="inv-check"><input type="checkbox" class="inv-sel" data-idx="${item._idx}"></label>
+            <span class="item-card-id">${catLabel} ${item.id}</span>
+            <button class="item-del" data-idx="${item._idx}" title="刪除">✕</button>
+          </div>
+          <div class="item-card-name">${getItemDisplayName(item.id)||'??'}</div>
+        </div>
       </div>
       <div class="item-card-row">
         <input class="w-id" type="text" value="${item.id}" data-field="id" data-idx="${item._idx}" placeholder="ID">
@@ -597,7 +602,7 @@ function initActions() {
   });
 
   // Add item
-  document.getElementById('btn-add-item').addEventListener('click',()=>{ if(!saveData){showToast('請先匯入','error');return;} saveData.p.inv.push({id:'new_item',uid:randUid(),cnt:1,en:0,bless:false,anc:false,attr:false,seteff:false,lock:false,junk:false}); renderInventory(); });
+  document.getElementById('btn-add-item').addEventListener('click',()=>{ if(!saveData){showToast('請先匯入','error');return;} openAddItemModal(); });
   document.getElementById('btn-del-junk').addEventListener('click',()=>{ if(!saveData)return; const before=saveData.p.inv.length; saveData.p.inv=saveData.p.inv.filter(i=>!i.junk); renderInventory(); showToast(`已刪除 ${before-saveData.p.inv.length} 件垃圾`,'success'); });
   document.getElementById('btn-unlock-all').addEventListener('click',()=>{ if(!saveData)return; saveData.p.inv.forEach(i=>i.lock=false); renderInventory(); showToast('已全部解鎖','success'); });
 
@@ -703,3 +708,171 @@ function bool(id){return document.getElementById(id)?.value==='true';}
 function setVal(id,v){const el=document.getElementById(id);if(!el)return;if(el.tagName==='INPUT'&&el.type==='checkbox')el.checked=!!v;else el.value=v??'';}
 function randUid(){return Math.random().toString(36).slice(2,11);}
 function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(type?' '+type:'');clearTimeout(t._timer);t._timer=setTimeout(()=>t.className='toast',2500);}
+
+// ─── ADD ITEM MODAL ────────────────────────────────────────────
+let modalSelectedItemId=null;
+
+function initModal() {
+  document.getElementById('modal-close-btn').addEventListener('click', closeAddItemModal);
+  document.getElementById('modal-cancel-btn').addEventListener('click', closeAddItemModal);
+  document.getElementById('item-modal-overlay').addEventListener('click', function(e) { if(e.target===this) closeAddItemModal(); });
+  document.getElementById('modal-item-search').addEventListener('input', filterModalItems);
+  document.getElementById('modal-cat-filter').addEventListener('change', filterModalItems);
+  document.getElementById('modal-confirm-btn').addEventListener('click', confirmAddItem);
+}
+
+function openAddItemModal() {
+  modalSelectedItemId=null;
+  document.getElementById('modal-item-search').value='';
+  document.getElementById('modal-cat-filter').value='';
+  document.getElementById('item-modal-overlay').style.display='flex';
+  document.getElementById('modal-confirm-btn').disabled=true;
+  document.getElementById('modal-item-preview').style.display='none';
+  filterModalItems();
+  // Auto-focus search
+  setTimeout(()=>document.getElementById('modal-item-search').focus(),100);
+}
+
+function closeAddItemModal() {
+  document.getElementById('item-modal-overlay').style.display='none';
+  modalSelectedItemId=null;
+}
+
+function filterModalItems() {
+  const query=document.getElementById('modal-item-search').value.toLowerCase().trim();
+  const catFilter=document.getElementById('modal-cat-filter').value;
+  const list=document.getElementById('modal-item-list');
+  
+  // Get matching items from ITEM_DB
+  let matches=[];
+  for(const [id,info] of Object.entries(ITEM_DB)) {
+    if(catFilter && info.c!==catFilter) continue;
+    if(!query || id.toLowerCase().includes(query) || (info.n&&info.n.toLowerCase().includes(query))) {
+      matches.push({id, ...info});
+    }
+  }
+  
+  // Sort: query results first by name, then by id
+  if(query) {
+    matches.sort((a,b)=>{
+      const aMatch=(a.n&&a.n.toLowerCase().includes(query))?0:1;
+      const bMatch=(b.n&&b.n.toLowerCase().includes(query))?0:1;
+      if(aMatch!==bMatch) return aMatch-bMatch;
+      return (a.n||'').localeCompare(b.n||'');
+    });
+  } else {
+    matches.sort((a,b)=>(a.c||'').localeCompare(b.c||'')||(a.n||'').localeCompare(b.n||''));
+  }
+  
+  if(matches.length>200) matches=matches.slice(0,200);
+  
+  if(matches.length===0) {
+    list.innerHTML='<div class="modal-item-row" style="color:var(--text-muted);cursor:default;justify-content:center;padding:12px">🔍 無符合物品</div>';
+    return;
+  }
+  
+  list.innerHTML=matches.map(m=>{
+    const selected=(m.id===modalSelectedItemId)?' selected':'';
+    const legend=m.legend?' <span class="mi-legend">★傳說</span>':'';
+    const dbn=m.n||m.id;
+    return '<div class="modal-item-row'+selected+'" data-id="'+m.id+'">'+
+      '<span class="mi-name">'+dbn+legend+'</span>'+
+      '<span class="mi-id">'+m.id+'</span>'+
+      '<span class="mi-cat">'+m.c+'</span>'+
+      '</div>';
+  }).join('');
+  
+  // Click handlers
+  list.querySelectorAll('.modal-item-row').forEach(row=>{
+    row.addEventListener('click',function(){
+      const id=this.dataset.id;
+      selectModalItem(id);
+    });
+  });
+}
+
+function selectModalItem(id) {
+  modalSelectedItemId=id;
+  document.querySelectorAll('.modal-item-row').forEach(r=>r.classList.remove('selected'));
+  const row=document.querySelector('.modal-item-row[data-id="'+id+'"]');
+  if(row) row.classList.add('selected');
+  
+  const info=ITEM_DB[id];
+  if(!info) return;
+  
+  const preview=document.getElementById('modal-item-preview');
+  preview.style.display='block';
+  document.getElementById('preview-name').textContent=info.n||id;
+  document.getElementById('preview-id').textContent=id;
+  document.getElementById('preview-type').textContent=(info.t||'通用');
+  document.getElementById('preview-legend').style.display=info.legend?'inline-block':'none';
+  document.getElementById('preview-db-name').textContent='📦 分類: '+info.c;
+  
+  // Generate UID
+  document.getElementById('modal-param-uid').value=randUid();
+  document.getElementById('modal-param-cnt').value=1;
+  document.getElementById('modal-param-en').value=0;
+  document.getElementById('modal-param-bless').checked=false;
+  document.getElementById('modal-param-anc').checked=false;
+  document.getElementById('modal-param-attr-ele').value='';
+  document.getElementById('modal-param-attr-lv').value='';
+  document.getElementById('modal-param-lock').checked=false;
+  document.getElementById('modal-param-junk').checked=false;
+  document.getElementById('modal-param-seteff').value='';
+  
+  document.getElementById('modal-confirm-btn').disabled=false;
+  document.getElementById('modal-confirm-btn').textContent='✅ 加入背包 (最上方)';
+}
+
+function confirmAddItem() {
+  if(!modalSelectedItemId || !saveData) return;
+  const cnt=parseInt(document.getElementById('modal-param-cnt').value)||1;
+  const en=parseInt(document.getElementById('modal-param-en').value)||0;
+  let uid=document.getElementById('modal-param-uid').value.trim();
+  if(!uid) uid=randUid();
+  const bless=document.getElementById('modal-param-bless').checked;
+  const anc=document.getElementById('modal-param-anc').checked;
+  const attrEle=document.getElementById('modal-param-attr-ele').value;
+  const attrLv=document.getElementById('modal-param-attr-lv').value;
+  const attr=attrEle?(attrEle+attrLv):false;
+  const lock=document.getElementById('modal-param-lock').checked;
+  const junk=document.getElementById('modal-param-junk').checked;
+  const seteff=document.getElementById('modal-param-seteff').value||false;
+  
+  const item={
+    id: modalSelectedItemId,
+    uid,
+    cnt: Math.max(1,cnt),
+    en: Math.max(0,Math.min(20,en)),
+    bless,
+    anc,
+    attr,
+    lock,
+    junk,
+    seteff
+  };
+  
+  // Insert at the beginning of inventory
+  saveData.p.inv.unshift(item);
+  renderInventory();
+  closeAddItemModal();
+  const dbn=ITEM_DB[modalSelectedItemId]?.n||modalSelectedItemId;
+  showToast('✅ 已加入 '+dbn+' ×'+cnt,'success');
+}
+
+// ─── ITEM ICON ─────────────────────────────────────────────────
+const TYPE_ICON_DIR = {wpn:'weapons',arm:'armors',acc:'accessories',pot:'items',scroll:'items',misc:'items',etc:'items'};
+function itemIconHTML(id, cls) {
+  const info = ITEM_DB && ITEM_DB[id];
+  if (!info) return '<span class="item-icon-fallback">📦</span>';
+  const dir = TYPE_ICON_DIR[info.t] || 'items';
+  const src = 'assets/icons/' + dir + '/' + encodeURIComponent(info.n) + '.png';
+  const fallback = '📦';
+  return '<img src="' + src + '" alt="' + esc(info.n) + '" class="' + (cls||'inv-item-icon') + '" onerror="this.outerHTML=\'" + fallback + "\'>";
+}
+
+// ─── ITEM DB NAME LOOKUP FOR DISPLAY ───────────────────────────
+function getItemDisplayName(id) {
+  if(ITEM_DB && ITEM_DB[id]) return ITEM_DB[id].n;
+  return null;
+}

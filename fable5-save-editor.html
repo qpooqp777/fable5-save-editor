@@ -1,0 +1,3261 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fable 5 存檔編輯器 (Standalone)</title>
+<style>
+/* === Fable 5 Save Editor v2 === */
+:root {
+  --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
+  --text: #e6edf3; --text-muted: #8b949e; --primary: #58a6ff; --primary-hover: #79b8ff;
+  --success: #3fb950; --danger: #f85149; --warning: #d29922; --purple: #bc8cff;
+  --font: 'Segoe UI', system-ui, sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { width:480px; min-height:520px; background:var(--bg); color:var(--text); font-family:var(--font); font-size:13px; overflow-x:hidden; }
+.app { display:flex; flex-direction:column; min-height:520px; }
+
+/* Header */
+.header { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--bg2); border-bottom:1px solid var(--border); }
+.header-title { font-size:14px; font-weight:700; color:var(--primary); }
+.header-actions { display:flex; gap:4px; }
+
+/* Tabs */
+.tabs { display:flex; overflow-x:auto; background:var(--bg2); border-bottom:1px solid var(--border); scrollbar-width:none; }
+.tabs::-webkit-scrollbar { display:none; }
+.tab { flex-shrink:0; padding:7px 9px; background:none; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; font-family:var(--font); transition:all .15s; }
+.tab:hover { color:var(--text); }
+.tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+
+/* Tab Content */
+.tab-content { display:none; padding:10px 12px; flex:1; overflow-y:auto; max-height:400px; }
+.tab-content.active { display:block; }
+
+.section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--text-muted); margin-bottom:6px; padding-bottom:3px; border-bottom:1px solid var(--border); }
+.mt { margin-top:12px; }
+.mb { margin-bottom:6px; }
+
+/* Form Grid */
+.form-grid { display:grid; grid-template-columns:130px 1fr; gap:5px 8px; align-items:center; }
+.form-grid label { color:var(--text-muted); font-size:11px; }
+
+input[type="text"], input[type="number"], select, textarea {
+  width:100%; padding:4px 7px; background:var(--bg3); border:1px solid var(--border); border-radius:4px;
+  color:var(--text); font-size:12px; font-family:var(--font); outline:none; transition:border-color .15s;
+}
+input:focus, select:focus, textarea:focus { border-color:var(--primary); }
+select { cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 6px center; padding-right:20px; }
+input[type="number"] { -moz-appearance:textfield; }
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance:none; }
+
+/* Search */
+.search-row { display:flex; gap:6px; }
+.search-input { flex:1; font-size:12px; }
+.cat-filter { width:110px; font-size:11px; }
+.sort-row { display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin-top:4px; }
+.sort-label { font-size:10px; color:var(--text-muted); white-space:nowrap; }
+
+.sort-btn { background:var(--bg3)!important; border-color:var(--border)!important; color:var(--text-muted)!important; font-size:10px!important; padding:2px 6px!important; }
+.sort-btn:hover { border-color:var(--primary)!important; color:var(--primary)!important; }
+.sort-btn.active { background:#1f3a5f!important; border-color:var(--primary)!important; color:var(--primary)!important; }
+
+.inv-summary { font-size:10px; color:var(--text-muted); margin-top:4px; display:flex; align-items:center; gap:6px; }
+.inv-check,.inv-sel-all{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--text-muted);cursor:pointer}
+.inv-check input[type=checkbox],.inv-sel-all input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--warning)}
+.inv-toolbar { margin-bottom:8px; }
+
+/* Item List */
+.item-list { display:flex; flex-direction:column; gap:4px; max-height:260px; overflow-y:auto; }
+.item-card { background:var(--bg3); border:1px solid var(--border); border-radius:5px; padding:6px 8px; position:relative; font-size:11px; transition: border-color .15s; }
+.item-card:hover { border-color: var(--primary); }
+.item-card.highlight { border-color: var(--warning); background: #2a2518; }
+.item-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
+.item-card-id { color:var(--warning); font-weight:600; font-size:11px; }
+.item-card-uid { color:var(--text-muted); font-size:9px; font-family:monospace; }
+.item-card-row { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:2px; }
+.item-card-row input { width:auto; padding:2px 5px; font-size:10px; }
+.item-card-row input.w-id { width:100px; }
+.item-card-row input.w-cnt { width:55px; }
+.item-card-row input.w-uid { width:75px; font-size:9px; }
+.item-card-row input.w-en { width:40px; }
+.item-card-row input.w-attr { width:55px; }
+.tag { display:inline-block; padding:1px 4px; border-radius:3px; font-size:9px; font-weight:600; cursor:pointer; user-select:none; }
+.tag-bless { background:#1a3a1a; color:var(--success); border:1px solid #2a5a2a; }
+.tag-anc { background:#3a2a1a; color:var(--warning); border:1px solid #5a4a2a; }
+.tag-attr { background:#1a2a3a; color:var(--primary); border:1px solid #2a4a5a; }
+.tag-set { background:#2a1a3a; color:var(--purple); border:1px solid #4a2a5a; }
+.tag-lock { background:#3a1a1a; color:var(--danger); border:1px solid #5a2a2a; }
+.tag-junk { background:#2a2a2a; color:#666; border:1px solid #3a3a3a; }
+.tag-off { opacity:.4; }
+.item-del { background:none; border:none; color:var(--danger); cursor:pointer; font-size:13px; padding:0; opacity:.6; transition:opacity .15s; }
+.item-del:hover { opacity:1; }
+
+.inv-actions-bar { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+
+/* Equipment Grid */
+.eq-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.eq-slot { background:var(--bg3); border:1px solid var(--border); border-radius:5px; padding:6px 8px; }
+.eq-slot-name { font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:2px; }
+.eq-slot-item { font-size:11px; color:var(--warning); font-weight:600; }
+.eq-slot-empty { font-size:10px; color:var(--text-muted); font-style:italic; }
+.eq-slot-fields { display:flex; flex-direction:column; gap:2px; margin-top:3px; }
+.eq-slot-fields input[type=text],.eq-slot-fields input[type=number] { padding:2px 5px; font-size:10px; }
+.eq-slot-fields .eq-checks { display:flex; gap:6px; margin-top:1px; }
+.eq-check { font-size:10px; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; gap:2px; }
+.eq-check input[type=checkbox] { width:13px; height:13px; cursor:pointer; accent-color:var(--warning); }
+.eq-slot-tags { display:flex; gap:3px; flex-wrap:wrap; margin-top:2px; }
+
+/* Skill List */
+.skill-list { display:flex; flex-wrap:wrap; gap:4px; max-height:180px; overflow-y:auto; }
+.skill-chip { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:3px 8px; font-size:10px; display:flex; align-items:center; gap:4px; }
+.skill-chip .skill-name { color:var(--warning); }
+.skill-chip .skill-cn { color:var(--text-secondary); font-size:10px; margin-left:4px; }
+.skill-search-add { display:flex; gap:4px; position:relative; }
+.skill-search-add input { flex:1; }
+.skill-dropdown { display:none; position:absolute; background:var(--bg2); border:1px solid var(--border); border-radius:4px; max-height:200px; overflow-y:auto; z-index:9999; min-width:200px; box-shadow:0 4px 12px rgba(0,0,0,.5); }
+.skill-dropdown.open { display:block; }
+.skill-dd-item { padding:5px 8px; cursor:pointer; font-size:11px; display:flex; justify-content:space-between; gap:6px; }
+.skill-dd-item:hover { background:var(--bg3); }
+.skill-dd-cn { color:var(--text); }
+.skill-dd-id { color:var(--text-muted); font-size:9px; }
+.skill-chip .skill-del { color:var(--danger); cursor:pointer; opacity:.6; font-size:12px; }
+.skill-chip .skill-del:hover { opacity:1; }
+.skill-input-row { display:flex; gap:6px; }
+
+/* Buff List */
+.buff-list { max-height:200px; overflow-y:auto; }
+.buff-row { display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px solid var(--border); }
+.buff-row:last-child { border-bottom:none; }
+.buff-name { flex:1; font-size:11px; color:var(--text-muted); min-width:100px; }
+.buff-active { color:var(--success); font-weight:600; }
+.buff-val { width:60px; font-size:11px; padding:2px 5px; }
+
+/* Ally List */
+.ally-list { display:flex; flex-direction:column; gap:4px; }
+
+/* Slot List */
+.slot-list { display:flex; flex-direction:column; gap:5px; }
+.slot-card { display:flex; align-items:center; gap:6px; background:var(--bg3); border:1px solid var(--border); border-radius:5px; padding:6px 8px; }
+.slot-card .slot-name { flex:1; font-size:12px; font-weight:600; }
+.slot-card .slot-meta { font-size:9px; color:var(--text-muted); }
+.slot-card .slot-info { font-size:10px; color:var(--text-muted); margin-top:1px; }
+
+/* Quick Actions */
+.quick-actions { display:flex; flex-wrap:wrap; gap:5px; }
+.btn-preset { background:var(--bg3); border-color:var(--border); color:var(--text-muted); font-size:10px; padding:4px 8px; }
+.btn-preset:hover { border-color:var(--primary); color:var(--primary); }
+
+/* JSON */
+.json-editor { width:100%; height:200px; background:var(--bg3); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:'Consolas','Courier New',monospace; font-size:10px; padding:6px; resize:vertical; outline:none; }
+.json-actions { display:flex; gap:5px; margin-top:5px; }
+.json-status { font-size:10px; margin-top:4px; color:var(--text-muted); }
+
+/* Buttons */
+.btn { padding:5px 10px; border:1px solid var(--border); border-radius:4px; font-size:11px; font-family:var(--font); cursor:pointer; transition:all .15s; white-space:nowrap; }
+.btn-sm { padding:3px 7px; font-size:10px; }
+.btn-block { width:100%; }
+.btn-primary { background:#1f6feb; border-color:#1f6feb; color:#fff; }
+.btn-primary:hover { background:#388bfd; }
+.btn-secondary { background:var(--bg3); border-color:var(--border); color:var(--text); }
+.btn-secondary:hover { border-color:var(--primary); color:var(--primary); }
+.btn-danger { background:#3d1f1f; border-color:var(--danger); color:var(--danger); }
+.btn-danger:hover { background:#5d2020; }
+.btn-ghost { background:none; border:1px solid transparent; color:var(--text-muted); padding:3px 5px; font-size:11px; }
+.btn-ghost:hover { color:var(--text); background:var(--bg3); border-color:var(--border); }
+
+/* Footer */
+.footer { display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg2); border-top:1px solid var(--border); gap:6px; }
+.footer .btn { flex:1; text-align:center; }
+
+/* Toast */
+.toast { position:fixed; bottom:55px; left:50%; transform:translateX(-50%) translateY(15px); background:var(--bg3); border:1px solid var(--border); color:var(--text); padding:6px 14px; border-radius:5px; font-size:11px; opacity:0; transition:opacity .2s,transform .2s; pointer-events:none; z-index:100; white-space:nowrap; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.success { border-color:var(--success); color:var(--success); }
+.toast.error { border-color:var(--danger); color:var(--danger); }
+
+.info-text { font-size:11px; color:var(--text-muted); padding:4px 0; }
+
+.junk-list { max-height:100px; overflow-y:auto; font-size:10px; color:var(--text-muted); font-family:monospace; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:3px; height:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+/* ═══════════════════ Modal ═══════════════════ */
+.modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.75); z-index:1000; display:flex; align-items:center; justify-content:center; padding:10px; }
+.modal { background:var(--bg2); border:1px solid var(--border); border-radius:8px; width:460px; max-height:480px; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.5); }
+.modal-header { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-bottom:1px solid var(--border); }
+.modal-title { font-size:13px; font-weight:700; color:var(--primary); }
+.modal-close { background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; padding:0 4px; line-height:1; }
+.modal-close:hover { color:var(--danger); }
+.modal-body { flex:1; overflow-y:auto; padding:10px 12px; max-height:360px; }
+.modal-search-row { display:flex; gap:6px; margin-bottom:8px; }
+.modal-item-list { max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; background:var(--bg3); }
+.modal-item-row { display:flex; align-items:center; gap:6px; padding:4px 8px; cursor:pointer; border-bottom:1px solid var(--border); transition:background .1s; }
+.modal-item-row:last-child { border-bottom:none; }
+.modal-item-row:hover { background:var(--bg); }
+.modal-item-row.selected { background:#1a3a5a; }
+.mi-name { flex:1; font-size:11px; color:var(--text); }
+.mi-id { font-size:9px; color:var(--text-muted); font-family:monospace; }
+.mi-cat { font-size:9px; color:var(--text-muted); padding:1px 4px; border-radius:3px; background:var(--bg); white-space:nowrap; }
+.mi-legend { color:var(--warning); font-size:10px; }
+
+.modal-item-preview { margin-top:8px; padding:8px; background:var(--bg3); border:1px solid var(--border); border-radius:5px; }
+.preview-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
+.preview-label { font-size:9px; color:var(--text-muted); text-transform:uppercase; }
+.preview-name { font-size:12px; font-weight:700; color:var(--warning); }
+.preview-id { font-size:10px; color:var(--primary); font-family:monospace; }
+.preview-type { font-size:9px; color:var(--text-muted); background:var(--bg); padding:1px 5px; border-radius:3px; }
+.preview-params { display:flex; flex-direction:column; gap:5px; }
+.param-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.param-row label { font-size:10px; color:var(--text-muted); white-space:nowrap; }
+.param-input { width:60px; padding:2px 5px; font-size:10px; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); }
+.param-narrow { width:45px; }
+.param-check { display:flex; align-items:center; gap:2px; font-size:10px; color:var(--text-muted); cursor:pointer; }
+.param-check input[type=checkbox] { width:13px; height:13px; cursor:pointer; accent-color:var(--warning); }
+.preview-db-name { font-size:10px; color:var(--text-muted); margin-top:4px; padding-top:4px; border-top:1px solid var(--border); }
+.modal-footer { display:flex; justify-content:flex-end; gap:6px; padding:8px 12px; border-top:1px solid var(--border); }
+
+/* Item card enhancement - show DB name */
+.item-card-dbname { font-size:9px; color:var(--text-muted); margin-left:4px; }
+.item-card-header { margin-bottom:2px; }
+
+body { width: auto; min-width: 480px; }
+.app { min-height: 100vh; }
+.tab-content { max-height: none; }
+.item-list { max-height: 400px; }
+.skill-list { max-height: 300px; }
+.buff-list { max-height: 300px; }
+.json-editor { height: 350px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title">⚔️ Fable 5 Save Editor</div>
+    <div class="header-actions">
+      <button class="btn btn-sm btn-ghost" id="btn-import-file" title="從 JSON 檔案匯入">📂 匯入</button>
+      <button class="btn btn-sm btn-ghost" id="btn-export-file" title="匯出 JSON 檔案">💾 匯出</button>
+      <input type="file" id="file-import" accept=".json" style="display:none">
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-tab="character">👤 角色</button>
+    <button class="tab" data-tab="stats">💪 能力</button>
+    <button class="tab" data-tab="inventory">🎒 背包</button>
+    <button class="tab" data-tab="equipment">⚔️ 裝備</button>
+    <button class="tab" data-tab="skills">🎯 技能</button>
+    <button class="tab" data-tab="world">🌍 世界</button>
+    <button class="tab" data-tab="config">⚙️ 設定</button>
+    <button class="tab" data-tab="slots">📦 存檔</button>
+    <button class="tab" data-tab="json">{ } JSON</button>
+  </div>
+
+  <!-- ═══════════════════ CHARACTER ═══════════════════ -->
+  <div class="tab-content active" id="tab-character">
+    <div class="section-title">👤 角色基本資料</div>
+    <div class="form-grid">
+      <label>職業</label>
+      <select id="f-cls">
+        <option value="elf">🧝 妖精 Elf</option>
+        <option value="warrior">⚔️ 戰士 Warrior</option>
+        <option value="mage">🔮 法師 Mage</option>
+        <option value="ranger">🏹 遊俠 Ranger</option>
+        <option value="paladin">🛡️ 聖騎士 Paladin</option>
+        <option value="rogue">🗡️ 盜賊 Rogue</option>
+        <option value="cleric">✝️ 牧師 Cleric</option>
+        <option value="darkknight">🌑 黑暗騎士 DarkKnight</option>
+        <option value="illusionist">🌀 幻術師 Illusionist</option>
+      </select>
+      <label>角色名稱</label>
+      <input type="text" id="f-name" placeholder="未命名">
+      <label>頭像</label>
+      <input type="text" id="f-avatar" placeholder="女法師">
+      <label>等級</label>
+      <input type="number" id="f-lv" min="1" max="99999">
+      <label>經驗值</label>
+      <input type="number" id="f-exp" min="0">
+      <label>金錢 (G)</label>
+      <input type="number" id="f-gold" min="0">
+      <label>經典模式</label>
+      <select id="f-classic"><option value="false">關閉</option><option value="true">開啟</option></select>
+      <label>萬靈藥使用</label>
+      <input type="number" id="f-panacea-used" min="0">
+    </div>
+    <div class="section-title mt">❤️ 生命與魔力</div>
+    <div class="form-grid">
+      <label>當前 HP</label>
+      <input type="number" id="f-hp" step="0.1">
+      <label>最大 HP</label>
+      <input type="number" id="f-mhp" step="0.1">
+      <label>當前 MP</label>
+      <input type="number" id="f-mp" step="0.1">
+      <label>最大 MP</label>
+      <input type="number" id="f-mmp" step="0.1">
+      <label>已死亡</label>
+      <select id="f-dead"><option value="false">否</option><option value="true">是</option></select>
+    </div>
+    <div class="section-title mt">🌀 變身狀態 (Poly)</div>
+    <div class="form-grid">
+      <label>變身名稱</label>
+      <input type="text" id="f-poly-n" placeholder="黑長者">
+      <label>魔法傷害加成</label>
+      <input type="number" id="f-poly-mgd" step="0.1">
+      <label>速度加成</label>
+      <input type="number" id="f-poly-spd" step="0.1">
+      <label>MP回復加成</label>
+      <input type="number" id="f-poly-mpr" step="0.1">
+      <label>特殊加成</label>
+      <input type="number" id="f-poly-sp" step="0.1">
+      <label>清除變身</label>
+      <button class="btn btn-danger btn-sm" id="btn-clear-poly">清除變身</button>
+    </div>
+    <div class="section-title mt">✨ 祝福 (Blessings)</div>
+    <div class="form-grid">
+      <label>勇猛祝福</label>
+      <input type="number" id="f-bless-brave">
+      <label>支援祝福</label>
+      <input type="number" id="f-bless-support">
+      <label>精準祝福</label>
+      <input type="number" id="f-bless-precise">
+      <label>烈焰祝福</label>
+      <input type="number" id="f-bless-blaze">
+    </div>
+  </div>
+
+  <!-- ═══════════════════ STATS ═══════════════════ -->
+  <div class="tab-content" id="tab-stats">
+    <div class="section-title">💪 基礎能力值 (Base Stats)</div>
+    <div class="form-grid">
+      <label>力量 STR</label><input type="number" id="f-str" min="0" max="9999">
+      <label>敏捷 DEX</label><input type="number" id="f-dex" min="0" max="9999">
+      <label>體質 CON</label><input type="number" id="f-con" min="0" max="9999">
+      <label>智力 INT</label><input type="number" id="f-int" min="0" max="9999">
+      <label>感知 WIS</label><input type="number" id="f-wis" min="0" max="9999">
+      <label>魅力 CHA</label><input type="number" id="f-cha" min="0" max="9999">
+    </div>
+    <div class="section-title mt">🏆 獎勵分配</div>
+    <div class="form-grid">
+      <label>獎勵點數</label><input type="number" id="f-bonus" min="0">
+      <label>STR 分配</label><input type="number" id="f-alloc-str" min="0">
+      <label>DEX 分配</label><input type="number" id="f-alloc-dex" min="0">
+      <label>CON 分配</label><input type="number" id="f-alloc-con" min="0">
+      <label>INT 分配</label><input type="number" id="f-alloc-int" min="0">
+      <label>WIS 分配</label><input type="number" id="f-alloc-wis" min="0">
+      <label>CHA 分配</label><input type="number" id="f-alloc-cha" min="0">
+    </div>
+    <div class="section-title mt">🧪 萬靈藥加點 (Panacea)</div>
+    <div class="form-grid">
+      <label>STR</label><input type="number" id="f-pan-str" min="0">
+      <label>DEX</label><input type="number" id="f-pan-dex" min="0">
+      <label>CON</label><input type="number" id="f-pan-con" min="0">
+      <label>INT</label><input type="number" id="f-pan-int" min="0">
+      <label>WIS</label><input type="number" id="f-pan-wis" min="0">
+      <label>CHA</label><input type="number" id="f-pan-cha" min="0">
+      <label>已使用次數</label><input type="number" id="f-pan-used" min="0">
+    </div>
+    <div class="section-title mt">📊 衍生屬性 (Derived Stats)</div>
+    <div class="form-grid" id="derived-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════ INVENTORY ═══════════════════ -->
+  <div class="tab-content" id="tab-inventory">
+    <div class="inv-toolbar">
+      <div class="search-row">
+        <input type="text" id="inv-search" placeholder="🔍 搜尋物品 ID / 類型..." class="search-input">
+        <select id="inv-cat-filter" class="cat-filter">
+          <option value="">全部類型</option>
+          <option value="wpn">⚔️ 武器 wpn</option>
+          <option value="amr">🛡️ 鎧甲 amr</option>
+          <option value="arm">🛡️ 護甲 arm</option>
+          <option value="hlm">🪖 頭盔 hlm</option>
+          <option value="shd">🛡️ 盾牌 shd</option>
+          <option value="clk">🧥 披風 clk</option>
+          <option value="glv">🧤 手套 glv</option>
+          <option value="bot">👢 靴子 bot</option>
+          <option value="acc">💍 飾品 acc</option>
+          <option value="amu">📿 項鍊 amu</option>
+          <option value="blt">🪢 腰帶 blt</option>
+          <option value="rng">💍 戒指 rng</option>
+          <option value="bk">📜 卷軸 bk</option>
+          <option value="scroll">📜 卷軸 scroll</option>
+          <option value="potion">🧪 藥水 potion</option>
+          <option value="panacea">🧪 萬靈藥 panacea</option>
+          <option value="mat">📦 材料 mat</option>
+          <option value="item">📦 道具 item</option>
+          <option value="quest">📋 任務 quest</option>
+          <option value="new">❓ 新物品 new</option>
+        </select>
+      </div>
+      <div class="sort-row">
+        <span class="sort-label">排序：</span>
+        <button class="btn btn-sm sort-btn active" data-sort="default">預設</button>
+        <button class="btn btn-sm sort-btn" data-sort="id">ID</button>
+        <button class="btn btn-sm sort-btn" data-sort="cnt-desc">數量↓</button>
+        <button class="btn btn-sm sort-btn" data-sort="cnt-asc">數量↑</button>
+        <button class="btn btn-sm sort-btn" data-sort="en-desc">強化↓</button>
+        <button class="btn btn-sm sort-btn" data-sort="bless">祝福</button>
+        <button class="btn btn-sm sort-btn" data-sort="anc">遠古</button>
+        <button class="btn btn-sm sort-btn" data-sort="attr">屬性</button>
+        <button class="btn btn-sm sort-btn" data-sort="lock">鎖定</button>
+      </div>
+      <div class="inv-summary">
+        <label class="inv-sel-all"><input type="checkbox" id="inv-sel-all">全選</label>
+        顯示 <span id="inv-show-count">0</span> / <span id="inv-total-count">0</span> 項
+        &nbsp;|&nbsp; 總數量 <span id="inv-total-qty">0</span>
+      </div>
+    </div>
+    <div id="inv-list" class="item-list"></div>
+    <div class="inv-actions-bar">
+      <button class="btn btn-secondary btn-sm" id="btn-add-item">+ 新增物品</button>
+      <button class="btn btn-danger btn-sm" id="btn-del-selected">🗑️ 刪除勾選</button>
+      <button class="btn btn-danger btn-sm" id="btn-del-junk">🗑️ 刪除垃圾</button>
+      <button class="btn btn-secondary btn-sm" id="btn-unlock-all">🔓 全部解鎖</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ EQUIPMENT ═══════════════════ -->
+  <div class="tab-content" id="tab-equipment">
+    <div class="section-title">⚔️ 裝備欄位</div>
+    <div class="eq-grid" id="eq-grid"></div>
+    <div class="section-title mt">🎯 套裝效果狀態</div>
+    <div class="form-grid" id="set-bonus-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════ SKILLS ═══════════════════ -->
+  <div class="tab-content" id="tab-skills">
+    <div class="section-title">🎯 已學技能 (<span id="skill-count">0</span>)</div>
+    <div class="search-row mb">
+      <input type="text" id="skill-search" placeholder="🔍 搜尋技能..." class="search-input">
+    </div>
+    <div id="skills-list" class="skill-list"></div>
+    <div class="skill-input-row mt" style="flex-direction:column;align-items:stretch">
+      <div class="skill-search-add">
+        <input type="text" id="new-skill-id" placeholder="🔍 搜尋或輸入技能名稱 / ID" autocomplete="off">
+        <button class="btn btn-primary btn-sm" id="btn-add-skill">+ 新增</button>
+      </div>
+    </div>
+    <div class="section-title mt">🌀 Buff 效果 (<span id="buff-count">0</span> 活躍)</div>
+    <div class="search-row mb">
+      <input type="text" id="buff-search" placeholder="🔍 搜尋 Buff..." class="search-input">
+    </div>
+    <div id="buffs-list" class="buff-list"></div>
+    <div class="section-title mt">🤝 夥伴 (Allies)</div>
+    <div id="allies-list" class="ally-list"></div>
+    <div class="section-title mt">🐾 召喚獸</div>
+    <div class="form-grid" id="summon-grid">
+      <label>技能 ID</label><input type="text" id="f-summon-skid">
+      <label>名稱</label><input type="text" id="f-summon-n">
+      <label>冷卻</label><input type="number" id="f-summon-cd">
+    </div>
+    <button class="btn btn-danger btn-sm mt" id="btn-clear-summon">清除召喚獸</button>
+  </div>
+
+  <!-- ═══════════════════ WORLD ═══════════════════ -->
+  <div class="tab-content" id="tab-world">
+    <div class="section-title">🌍 地圖進度</div>
+    <div class="form-grid">
+      <label>村莊 Village</label><input type="text" id="f-map-village">
+      <label>野外 Wild</label><input type="text" id="f-map-wild">
+      <label>地城 Dungeon</label><input type="text" id="f-map-dungeon">
+      <label>特殊 Special</label><input type="text" id="f-map-special">
+      <label>塔 Tower</label><input type="text" id="f-map-tower">
+      <label>圍城 Siege</label><input type="text" id="f-map-siege">
+      <label>城堡 Castle</label><input type="text" id="f-map-castle">
+      <label>最後戰鬥地圖</label><input type="text" id="f-last-battle">
+    </div>
+    <div class="section-title mt">🏰 圍城戰 (Siege)</div>
+    <div class="form-grid">
+      <label>進行中</label><select id="f-siege-active"><option value="false">否</option><option value="true">是</option></select>
+      <label>城門已破</label><select id="f-siege-gate"><option value="false">否</option><option value="true">是</option></select>
+      <label>塔樓已破</label><select id="f-siege-tower"><option value="false">否</option><option value="true">是</option></select>
+      <label>城門 HP</label><input type="number" id="f-siege-gate-hp">
+      <label>塔樓 HP</label><input type="number" id="f-siege-tower-hp">
+      <label>擊殺數</label><input type="number" id="f-siege-kills" min="0">
+      <label>結果</label><select id="f-siege-result"><option value="">無</option><option value="win">勝利</option><option value="lose">失敗</option></select>
+      <label>所屬城市</label><input type="text" id="f-siege-city">
+      <label>勝利城市</label><input type="text" id="f-siege-victory-city">
+    </div>
+    <div class="section-title mt">🏰 城堡守衛 (Castle Guard)</div>
+    <div id="castle-guard-info" class="info-text">無資料</div>
+    <div class="section-title mt">🏆 進度標記</div>
+    <div class="form-grid">
+      <label>血之誓約</label><input type="text" id="f-blood-pledge">
+      <label>珊娜世界</label><select id="f-sherine-world"><option value="false">否</option><option value="true">是</option></select>
+      <label>擊敗傑尼斯</label><select id="f-pride-beat"><option value="false">否</option><option value="true">是</option></select>
+      <label>惡魔神殿</label><select id="f-demon-temple"><option value="false">否</option><option value="true">是</option></select>
+      <label>火焰親和</label><input type="number" id="f-flame-affinity" min="0">
+      <label>試煉階段</label><input type="number" id="f-trial-stage" min="0">
+      <label>伊士麥爾帳號</label><select id="f-ismael-used"><option value="false">否</option><option value="true">是</option></select>
+    </div>
+    <div class="section-title mt">🧪 異常狀態 (Statuses)</div>
+    <div class="form-grid" id="statuses-grid">
+      <!-- Populated by JS -->
+    </div>
+    <div class="section-title mt">⏱️ 冷卻時間 (Cooldowns)</div>
+    <div class="form-grid" id="cds-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════ CONFIG ═══════════════════ -->
+  <div class="tab-content" id="tab-config">
+    <div class="section-title">⚙️ 戰鬥設定</div>
+    <div class="form-grid">
+      <label>自動喝藥水 ID</label><input type="text" id="f-cfg-pot">
+      <label>HP 閾值 (%)</label><input type="number" id="f-cfg-pot-hp" min="0" max="100">
+      <label>自動購買藥水</label><select id="f-cfg-auto-buy-pot"><option value="false">關</option><option value="true">開</option></select>
+      <label>攻擊技能 ID</label><input type="text" id="f-cfg-sel-atk">
+      <label>攻擊 MP 閾值 (%)</label><input type="number" id="f-cfg-mp-atk" min="0" max="100">
+      <label>治癒技能 ID</label><input type="text" id="f-cfg-sel-heal">
+      <label>治癒 HP 閾值 (%)</label><input type="number" id="f-cfg-mp-heal" min="0" max="100">
+      <label>轉換技能 ID</label><input type="text" id="f-cfg-sel-convert">
+      <label>轉換 HP 閾值 (%)</label><input type="number" id="f-cfg-hp-convert" min="0" max="100">
+    </div>
+    <div class="section-title mt">🌀 自動 Buff</div>
+    <div class="form-grid" id="auto-buff-grid">
+      <!-- Populated by JS -->
+    </div>
+    <div class="section-title mt">🏪 Pandora 商店</div>
+    <div class="form-grid">
+      <label>物品 ID</label><input type="text" id="f-pandora-id">
+      <label>價格 (G)</label><input type="number" id="f-pandora-price">
+      <label>重量</label><input type="number" id="f-pandora-weight">
+    </div>
+    <div class="section-title mt">📋 垃圾物品偏好 (<span id="junk-count">0</span>)</div>
+    <div id="junk-list" class="junk-list"></div>
+  </div>
+
+  <!-- ═══════════════════ SLOTS ═══════════════════ -->
+  <div class="tab-content" id="tab-slots">
+    <div class="section-title">📦 存檔槽管理</div>
+    <div id="slot-list" class="slot-list"></div>
+    <div class="section-title mt">⚡ 快速預設</div>
+    <div class="quick-actions">
+      <button class="btn btn-preset" data-preset="max-gold">💰 全金</button>
+      <button class="btn btn-preset" data-preset="max-pots">🧪 9999藥水</button>
+      <button class="btn btn-preset" data-preset="max-level">⭐ 滿等</button>
+      <button class="btn btn-preset" data-preset="max-stats">💪 滿能力</button>
+      <button class="btn btn-preset" data-preset="max-hpmp">❤️ 滿HP/MP</button>
+      <button class="btn btn-preset" data-preset="clear-buffs">🌀 清Buff</button>
+      <button class="btn btn-preset" data-preset="reset-cd">⏱️ 清冷卻</button>
+      <button class="btn btn-preset" data-preset="clear-statuses">💀 清異常</button>
+      <button class="btn btn-preset" data-preset="bless-all">✨ 全祝福</button>
+      <button class="btn btn-preset" data-preset="unlock-inv">🔓 解鎖全部</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ JSON ═══════════════════ -->
+  <div class="tab-content" id="tab-json">
+    <div class="section-title">{ } JSON 直接編輯</div>
+    <textarea id="json-editor" class="json-editor" placeholder="貼上完整 JSON 存檔..."></textarea>
+    <div class="json-actions">
+      <button class="btn btn-primary btn-sm" id="btn-apply-json">✅ 套用 JSON</button>
+      <button class="btn btn-secondary btn-sm" id="btn-load-json">📥 載入至編輯器</button>
+      <button class="btn btn-secondary btn-sm" id="btn-format-json">🎨 格式化</button>
+      <button class="btn btn-secondary btn-sm" id="btn-validate-json">✔️ 驗證</button>
+    </div>
+    <div id="json-status" class="json-status"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <button class="btn btn-danger" id="btn-reset">🔄 重置</button>
+    <button class="btn btn-secondary" id="btn-load">📥 重載</button>
+    <button class="btn btn-primary" id="btn-save">💾 儲存</button>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div id="skill-dropdown" class="skill-dropdown"></div>
+
+<!-- ═══════════════════ ADD ITEM MODAL ═══════════════════ -->
+<div id="item-modal-overlay" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">➕ 新增物品到背包</span>
+      <button class="modal-close" id="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-search-row">
+        <input type="text" id="modal-item-search" placeholder="🔍 搜尋物品名稱 / ID..." autocomplete="off" class="search-input">
+        <select id="modal-cat-filter" class="cat-filter">
+          <option value="">全部分類</option>
+          <option value="武器">⚔️ 武器</option>
+          <option value="鎧甲">🛡️ 鎧甲</option>
+          <option value="護甲">🛡️ 護甲</option>
+          <option value="頭盔">🪖 頭盔</option>
+          <option value="盾牌">🛡️ 盾牌</option>
+          <option value="披風">🧥 披風</option>
+          <option value="手套">🧤 手套</option>
+          <option value="靴子">👢 靴子</option>
+          <option value="飾品">💍 飾品</option>
+          <option value="項鏈">📿 項鏈</option>
+          <option value="腰帶">🪢 腰帶</option>
+          <option value="戒指">💍 戒指</option>
+          <option value="法術">📜 法術</option>
+          <option value="卷軸">📜 卷軸</option>
+          <option value="藥水">🧪 藥水</option>
+          <option value="萬靈藥">🧪 萬靈藥</option>
+          <option value="道具">📦 道具</option>
+          <option value="材料">📦 材料</option>
+          <option value="任務">📋 任務</option>
+        </select>
+      </div>
+      <div class="modal-item-list" id="modal-item-list"></div>
+      <div class="modal-item-preview" id="modal-item-preview" style="display:none">
+        <div class="preview-row">
+          <span class="preview-label">已選</span>
+          <span id="preview-name" class="preview-name"></span>
+          <span id="preview-id" class="preview-id"></span>
+          <span id="preview-type" class="preview-type"></span>
+          <span id="preview-legend" class="tag tag-bless" style="display:none">傳說</span>
+        </div>
+        <div class="preview-params">
+          <div class="param-row">
+            <label>數量</label><input type="number" id="modal-param-cnt" value="1" min="1" class="param-input">
+            <label>強化</label><input type="number" id="modal-param-en" value="0" min="0" max="20" class="param-input param-narrow">
+            <label>唯一ID</label><input type="text" id="modal-param-uid" class="param-input" placeholder="自動">
+          </div>
+          <div class="param-row">
+            <label class="param-check"><input type="checkbox" id="modal-param-bless"> 祝福</label>
+            <label class="param-check"><input type="checkbox" id="modal-param-anc"> 遠古</label>
+            <label style="font-size:10px;color:var(--text-muted)">屬性</label>
+            <select id="modal-param-attr-ele" style="width:68px;padding:2px 5px;font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text)">
+              <option value="">無</option>
+              <option value="fire">🔥 火</option>
+              <option value="water">💧 水</option>
+              <option value="wind">🌪️ 風</option>
+              <option value="earth">⛰️ 地</option>
+              <option value="ice">❄️ 冰</option>
+              <option value="light">✨ 光</option>
+              <option value="dark">🌑 暗</option>
+            </select>
+            <label style="font-size:10px;color:var(--text-muted);margin-left:2px">Lv</label>
+            <select id="modal-param-attr-lv" style="width:44px;padding:2px 5px;font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text)">
+              <option value="">-</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+            <label class="param-check"><input type="checkbox" id="modal-param-lock"> 鎖定</label>
+            <label class="param-check"><input type="checkbox" id="modal-param-junk"> 垃圾</label>
+          </div>
+          <div class="param-row">
+            <label>套裝</label>
+            <select id="modal-param-seteff" style="width:100px;padding:2px 5px;font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text)">
+              <option value="">無</option>
+              <option value="紅獅">🦁 紅獅</option>
+              <option value="白鳥">🕊️ 白鳥</option>
+              <option value="鐵衛">⚙️ 鐵衛</option>
+              <option value="麗人">💎 麗人</option>
+              <option value="疾風">🌪️ 疾風</option>
+              <option value="月光">🌙 月光</option>
+              <option value="學徒">📖 學徒</option>
+              <option value="魔女">🧙 魔女</option>
+              <option value="暗影">🌑 暗影</option>
+            </select>
+          </div>
+        </div>
+        <div class="preview-db-name" id="preview-db-name"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" id="modal-cancel-btn">取消</button>
+      <button class="btn btn-primary btn-sm" id="modal-confirm-btn" disabled>✅ 加入背包 (最上方)</button>
+    </div>
+  </div>
+</div>
+</div>
+
+
+</body>
+<script>
+// Fable 5 Item Database
+var ITEM_DB = {
+  "acc_116": { n: "傳送控制戒指", t: "acc", c: "飾品", legend: false },
+  "acc_117": { n: "變形控制戒指", t: "acc", c: "飾品", legend: false },
+  "acc_118": { n: "守護戒指", t: "acc", c: "飾品", legend: false },
+  "acc_119": { n: "長者戒指", t: "acc", c: "飾品", legend: false },
+  "acc_120": { n: "敏捷項鍊", t: "acc", c: "飾品", legend: false },
+  "acc_121": { n: "體質項鍊", t: "acc", c: "飾品", legend: false },
+  "acc_122": { n: "精神項鍊", t: "acc", c: "飾品", legend: false },
+  "acc_123": { n: "妖魔戰士項鍊", t: "acc", c: "飾品", legend: false },
+  "acc_124": { n: "守護項鍊", t: "acc", c: "飾品", legend: false },
+  "acc_125": { n: "長老項鍊", t: "acc", c: "飾品", legend: false },
+  "acc_126": { n: "抗魔項鍊", t: "acc", c: "飾品", legend: false },
+  "acc_127": { n: "老舊的身體腰帶", t: "acc", c: "飾品", legend: false },
+  "acc_128": { n: "老舊的精神腰帶", t: "acc", c: "飾品", legend: false },
+  "acc_129": { n: "老舊的靈魂腰帶", t: "acc", c: "飾品", legend: false },
+  "acc_130": { n: "精神腰帶", t: "acc", c: "飾品", legend: false },
+  "acc_131": { n: "靈魂腰帶", t: "acc", c: "飾品", legend: false },
+  "acc_132": { n: "多羅皮帶", t: "acc", c: "飾品", legend: false },
+  "acc_133": { n: "歐吉皮帶", t: "acc", c: "飾品", legend: false },
+  "acc_134": { n: "勇敢皮帶", t: "acc", c: "飾品", legend: false },
+  "acc_135": { n: "光明身體腰帶", t: "acc", c: "飾品", legend: false },
+  "acc_136": { n: "光明精神腰帶", t: "acc", c: "飾品", legend: false },
+  "acc_137": { n: "光明靈魂腰帶", t: "acc", c: "飾品", legend: false },
+  "acc_138": { n: "守護皮帶", t: "acc", c: "飾品", legend: false },
+  "acc_abyss_ring": { n: "深淵戒指", t: "acc", c: "飾品", legend: false },
+  "acc_bear_ring": { n: "熊戒指", t: "acc", c: "飾品", legend: false },
+  "acc_darkmage_amulet": { n: "黑法師項鍊", t: "acc", c: "飾品", legend: false },
+  "acc_demonbane": { n: "滅魔戒指", t: "acc", c: "飾品", legend: false },
+  "acc_doro": { n: "多羅戒指", t: "acc", c: "飾品", legend: false },
+  "acc_jenis_ring": { n: "潔尼斯戒指", t: "acc", c: "飾品", legend: true },
+  "acc_laia_amulet": { n: "蕾雅項鍊", t: "acc", c: "飾品", legend: true },
+  "acc_laia_ring": { n: "蕾雅戒指", t: "acc", c: "飾品", legend: true },
+  "acc_law_king_chain": { n: "法令軍王之鍊", t: "acc", c: "飾品", legend: true },
+  "acc_necro_king_ring": { n: "冥法軍王之戒", t: "acc", c: "飾品", legend: true },
+  "acc_summon_ctrl": { n: "召喚控制戒指", t: "acc", c: "飾品", legend: false },
+  "acc_summoner_amulet": { n: "喚獸師項鍊", t: "acc", c: "飾品", legend: false },
+  "acc_thebes_anubis": { n: "底比斯阿努比斯戒指", t: "acc", c: "飾品", legend: true },
+  "acc_thebes_horus": { n: "底比斯賀洛斯戒指", t: "acc", c: "飾品", legend: true },
+  "amr_baphomet": { n: "巴風特盔甲", t: "arm", c: "鎧甲", legend: true },
+  "amr_baranka": { n: "巴蘭卡盔甲", t: "arm", c: "鎧甲", legend: false },
+  "amr_bone": { n: "骷髏盔甲", t: "arm", c: "鎧甲", legend: false },
+  "amr_centipede": { n: "金屬蜈蚣皮盔甲", t: "arm", c: "鎧甲", legend: false },
+  "amr_chaos": { n: "混沌法袍", t: "arm", c: "鎧甲", legend: false },
+  "amr_dark_cape": { n: "黑暗披肩", t: "arm", c: "鎧甲", legend: false },
+  "amr_darkdweller": { n: "黑暗棲林者盔甲", t: "arm", c: "鎧甲", legend: false },
+  "amr_darkelf": { n: "黑暗妖精鱗甲", t: "arm", c: "鎧甲", legend: false },
+  "amr_darkmage_robe": { n: "黑法師長袍", t: "arm", c: "鎧甲", legend: false },
+  "amr_death": { n: "死亡盔甲", t: "arm", c: "鎧甲", legend: true },
+  "amr_demon": { n: "惡魔盔甲", t: "arm", c: "鎧甲", legend: true },
+  "amr_dk": { n: "死亡騎士盔甲", t: "arm", c: "鎧甲", legend: true },
+  "amr_fallen": { n: "墮落長袍", t: "arm", c: "鎧甲", legend: true },
+  "amr_jacket": { n: "皮夾克", t: "arm", c: "鎧甲", legend: false },
+  "amr_kinglaw": { n: "法令軍王長袍", t: "arm", c: "鎧甲", legend: true },
+  "amr_kurt": { n: "克特盔甲", t: "arm", c: "鎧甲", legend: true },
+  "amr_laia_robe": { n: "蕾雅長袍", t: "arm", c: "鎧甲", legend: false },
+  "amr_magerobe": { n: "法師長袍", t: "arm", c: "鎧甲", legend: false },
+  "amr_mambo": { n: "曼波外套", t: "arm", c: "鎧甲", legend: false },
+  "amr_oasis": { n: "歐西斯環甲", t: "arm", c: "鎧甲", legend: false },
+  "amr_official": { n: "武官護鎧", t: "arm", c: "鎧甲", legend: false },
+  "amr_old_leather": { n: "古老的皮盔甲", t: "arm", c: "鎧甲", legend: false },
+  "amr_old_plate": { n: "古老的金屬盔甲", t: "arm", c: "鎧甲", legend: false },
+  "amr_old_robe": { n: "古老的長袍", t: "arm", c: "鎧甲", legend: false },
+  "amr_old_scale": { n: "古老的鱗甲", t: "arm", c: "鎧甲", legend: false },
+  "amr_plate": { n: "金屬盔甲", t: "arm", c: "鎧甲", legend: false },
+  "amr_priest": { n: "神官法袍", t: "arm", c: "鎧甲", legend: false },
+  "amr_rasta_robe": { n: "拉斯塔巴德長袍", t: "arm", c: "鎧甲", legend: false },
+  "amr_robe": { n: "綿質長袍", t: "arm", c: "鎧甲", legend: false },
+  "amr_summoner_robe": { n: "喚獸師長袍", t: "arm", c: "鎧甲", legend: false },
+  "amu_cha": { n: "魅力項鍊", t: "acc", c: "項鏈", legend: false },
+  "amu_int": { n: "智力項鍊", t: "acc", c: "項鏈", legend: false },
+  "amu_iris": { n: "艾莉絲項鍊", t: "acc", c: "項鏈", legend: true },
+  "amu_str": { n: "力量項鍊", t: "acc", c: "項鏈", legend: false },
+  "arm_100": { n: "鋼鐵手套", t: "arm", c: "護甲", legend: false },
+  "arm_101": { n: "克特手套", t: "arm", c: "護甲", legend: true },
+  "arm_102": { n: "保護者手套", t: "arm", c: "護甲", legend: false },
+  "arm_103": { n: "小盾牌", t: "arm", c: "護甲", legend: false },
+  "arm_104": { n: "阿克海盾牌", t: "arm", c: "護甲", legend: false },
+  "arm_105": { n: "大盾牌", t: "arm", c: "護甲", legend: false },
+  "arm_106": { n: "反射之盾", t: "arm", c: "護甲", legend: false },
+  "arm_107": { n: "伊娃之盾", t: "arm", c: "護甲", legend: false },
+  "arm_108": { n: "塔盾", t: "arm", c: "護甲", legend: false },
+  "arm_109": { n: "木盾", t: "arm", c: "護甲", legend: false },
+  "arm_110": { n: "銀騎士之盾", t: "arm", c: "護甲", legend: false },
+  "arm_111": { n: "皮盾牌", t: "arm", c: "護甲", legend: false },
+  "arm_112": { n: "銀釘皮盾", t: "arm", c: "護甲", legend: false },
+  "arm_113": { n: "鋼鐵盾牌", t: "arm", c: "護甲", legend: false },
+  "arm_114": { n: "受詛咒的魔法書", t: "arm", c: "護甲", legend: false },
+  "arm_115": { n: "魔法能量之書", t: "arm", c: "護甲", legend: false },
+  "arm_42": { n: "頭盔", t: "arm", c: "護甲", legend: false },
+  "arm_43": { n: "騎士面甲", t: "arm", c: "護甲", legend: false },
+  "arm_44": { n: "艾爾穆的祝福", t: "arm", c: "護甲", legend: false },
+  "arm_45": { n: "治癒魔法頭盔", t: "arm", c: "護甲", legend: false },
+  "arm_46": { n: "敏捷魔法頭盔", t: "arm", c: "護甲", legend: false },
+  "arm_47": { n: "力量魔法頭盔", t: "arm", c: "護甲", legend: false },
+  "arm_48": { n: "皮帽子", t: "arm", c: "護甲", legend: false },
+  "arm_49": { n: "皮頭盔", t: "arm", c: "護甲", legend: false },
+  "arm_50": { n: "精靈敏捷頭盔", t: "arm", c: "護甲", legend: false },
+  "arm_51": { n: "精靈體質頭盔", t: "arm", c: "護甲", legend: false },
+  "arm_52": { n: "騎士頭巾", t: "arm", c: "護甲", legend: false },
+  "arm_53": { n: "紅騎士頭巾", t: "arm", c: "護甲", legend: false },
+  "arm_54": { n: "巴土瑟之帽", t: "arm", c: "護甲", legend: true },
+  "arm_55": { n: "卡士柏之帽", t: "arm", c: "護甲", legend: true },
+  "arm_56": { n: "馬庫爾之帽", t: "arm", c: "護甲", legend: true },
+  "arm_57": { n: "西瑪之帽", t: "arm", c: "護甲", legend: true },
+  "arm_58": { n: "淨化頭飾", t: "arm", c: "護甲", legend: false },
+  "arm_59": { n: "水晶盔甲", t: "arm", c: "護甲", legend: false },
+  "arm_60": { n: "青銅盔甲", t: "arm", c: "護甲", legend: false },
+  "arm_61": { n: "藤甲", t: "arm", c: "護甲", legend: false },
+  "arm_62": { n: "皮甲", t: "arm", c: "護甲", legend: false },
+  "arm_63": { n: "鏈甲", t: "arm", c: "護甲", legend: false },
+  "arm_64": { n: "歐西斯鏈甲", t: "arm", c: "護甲", legend: false },
+  "arm_65": { n: "鱗甲", t: "arm", c: "護甲", legend: false },
+  "arm_66": { n: "銀釘皮甲", t: "arm", c: "護甲", legend: false },
+  "arm_67": { n: "環甲", t: "arm", c: "護甲", legend: false },
+  "arm_68": { n: "小藤甲", t: "arm", c: "護甲", legend: false },
+  "arm_69": { n: "抗魔法鏈甲", t: "arm", c: "護甲", legend: false },
+  "arm_70": { n: "木甲", t: "arm", c: "護甲", legend: false },
+  "arm_71": { n: "精靈護胸金屬板", t: "arm", c: "護甲", legend: false },
+  "arm_72": { n: "精靈金屬盔甲", t: "arm", c: "護甲", legend: false },
+  "arm_73": { n: "精靈鏈甲", t: "arm", c: "護甲", legend: false },
+  "arm_74": { n: "木製的夾克", t: "arm", c: "護甲", legend: false },
+  "arm_75": { n: "皮背心", t: "arm", c: "護甲", legend: false },
+  "arm_76": { n: "皮盔甲", t: "arm", c: "護甲", legend: false },
+  "arm_77": { n: "銀釘皮背心", t: "arm", c: "護甲", legend: false },
+  "arm_78": { n: "硬皮背心", t: "arm", c: "護甲", legend: false },
+  "arm_79": { n: "鋼鐵金屬盔甲", t: "arm", c: "護甲", legend: false },
+  "arm_80": { n: "水龍鱗盔甲", t: "arm", c: "護甲", legend: true },
+  "arm_81": { n: "地龍鱗盔甲", t: "arm", c: "護甲", legend: true },
+  "arm_82": { n: "火龍鱗盔甲", t: "arm", c: "護甲", legend: true },
+  "arm_83": { n: "風龍鱗盔甲", t: "arm", c: "護甲", legend: true },
+  "arm_84": { n: "黑長者長袍", t: "arm", c: "護甲", legend: true },
+  "arm_85": { n: "精靈T恤", t: "arm", c: "護甲", legend: false },
+  "arm_86": { n: "侏儒斗篷", t: "arm", c: "護甲", legend: false },
+  "arm_87": { n: "保護者斗篷", t: "arm", c: "護甲", legend: false },
+  "arm_88": { n: "隱身斗篷", t: "arm", c: "護甲", legend: true },
+  "arm_89": { n: "瑪那斗篷", t: "arm", c: "護甲", legend: false },
+  "arm_90": { n: "長靴", t: "arm", c: "護甲", legend: false },
+  "arm_91": { n: "皮涼鞋", t: "arm", c: "護甲", legend: false },
+  "arm_92": { n: "銀釘皮涼鞋", t: "arm", c: "護甲", legend: false },
+  "arm_93": { n: "皮長靴", t: "arm", c: "護甲", legend: false },
+  "arm_94": { n: "鋼鐵長靴", t: "arm", c: "護甲", legend: false },
+  "arm_95": { n: "深水長靴", t: "arm", c: "護甲", legend: false },
+  "arm_96": { n: "黑長者涼鞋", t: "arm", c: "護甲", legend: true },
+  "arm_97": { n: "克特長靴", t: "arm", c: "護甲", legend: true },
+  "arm_98": { n: "腕甲", t: "arm", c: "護甲", legend: false },
+  "arm_99": { n: "力量手套", t: "arm", c: "護甲", legend: false },
+  "arm_pride_medusa_shield": { n: "梅杜莎盾牌", t: "arm", c: "護甲", legend: false },
+  "arm_rasta_leather": { n: "拉斯塔巴德皮盔甲", t: "arm", c: "護甲", legend: false },
+  "arm_shadowboots": { n: "影子長靴", t: "arm", c: "護甲", legend: false },
+  "arm_shadowglove": { n: "影子手套", t: "arm", c: "護甲", legend: false },
+  "arm_shadowmask": { n: "影子面具", t: "arm", c: "護甲", legend: false },
+  "armguard_archer": { n: "古代神射臂甲", t: "arm", c: "其他", legend: false },
+  "armguard_con": { n: "體力臂甲", t: "arm", c: "其他", legend: false },
+  "armguard_dragonscale": { n: "龍鱗臂甲", t: "arm", c: "其他", legend: false },
+  "armguard_fighter": { n: "古代鬥士臂甲", t: "arm", c: "其他", legend: false },
+  "armguard_guardian": { n: "守護者臂甲", t: "arm", c: "其他", legend: false },
+  "armguard_mage": { n: "法師臂甲", t: "arm", c: "其他", legend: false },
+  "bk_abs_barrier": { n: "魔法書(絕對屏障)", t: "skillbk", c: "法術", legend: false },
+  "bk_antidote": { n: "魔法書(解毒術)", t: "skillbk", c: "法術", legend: false },
+  "bk_aurora": { n: "魔法書(極光雷電)", t: "skillbk", c: "法術", legend: false },
+  "bk_berserk": { n: "魔法書(狂暴術)", t: "skillbk", c: "法術", legend: false },
+  "bk_blaze": { n: "魔法書(烈炎術)", t: "skillbk", c: "法術", legend: false },
+  "bk_bless_wpn": { n: "魔法書(祝福魔法武器)", t: "skillbk", c: "法術", legend: false },
+  "bk_blizzard": { n: "魔法書(冰雪暴)", t: "skillbk", c: "法術", legend: false },
+  "bk_blizzard_storm": { n: "魔法書(冰雪颶風)", t: "skillbk", c: "法術", legend: false },
+  "bk_break": { n: "魔法書(壞物術)", t: "skillbk", c: "法術", legend: false },
+  "bk_cancel": { n: "魔法書(魔法相消術)", t: "skillbk", c: "法術", legend: false },
+  "bk_charm": { n: "魔法書(迷魅術)", t: "skillbk", c: "法術", legend: false },
+  "bk_chill": { n: "魔法書(寒冰氣息)", t: "skillbk", c: "法術", legend: false },
+  "bk_cold_shiver": { n: "魔法書(寒冷戰慄)", t: "skillbk", c: "法術", legend: false },
+  "bk_counter_barrier": { n: "技術書(反擊屏障)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_armorbreak": { n: "黑暗精靈水晶(破壞盔甲)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_blind": { n: "魔法書(闇盲咒術)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_burn": { n: "黑暗精靈水晶(燃燒鬥志)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_crit": { n: "黑暗精靈水晶(會心一擊)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_dex": { n: "黑暗精靈水晶(敏捷提升)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_dodge": { n: "黑暗精靈水晶(暗影閃避)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_double": { n: "黑暗精靈水晶(雙重破壞)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_erup": { n: "黑暗精靈水晶(迴避提升)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_fang": { n: "黑暗精靈水晶(暗影之牙)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_mrup": { n: "黑暗精靈水晶(影之防護)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_poison": { n: "黑暗精靈水晶(附加劇毒)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_poisonres": { n: "黑暗精靈水晶(毒性抵抗)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_refine": { n: "黑暗精靈水晶(提煉魔石)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_shadow": { n: "魔法書(黑闇之影)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_stealth": { n: "黑暗精靈水晶(暗隱術)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_str": { n: "黑暗精靈水晶(力量提升)", t: "skillbk", c: "法術", legend: false },
+  "bk_dark_walkhaste": { n: "黑暗精靈水晶(行走加速)", t: "skillbk", c: "法術", legend: false },
+  "bk_dex_up": { n: "魔法書(通暢氣脈術)", t: "skillbk", c: "法術", legend: false },
+  "bk_disease": { n: "魔法書(疾病術)", t: "skillbk", c: "法術", legend: false },
+  "bk_disintegrate": { n: "魔法書(究極光裂術)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_armor": { n: "龍騎士書板(龍之護鎧)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_awaken_antares": { n: "龍騎士書板(覺醒：安塔瑞斯)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_awaken_baraka": { n: "龍騎士書板(覺醒：巴拉卡斯)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_awaken_falion": { n: "龍騎士書板(覺醒：法利昂)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_bloodlust": { n: "龍騎士書板(血之渴望)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_deadlybody": { n: "龍騎士書板(致命身軀)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_deathlightning": { n: "龍騎士書板(奪命之雷)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_flameslash": { n: "龍騎士書板(燃燒擊砍)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_guardbreak": { n: "龍騎士書板(護衛毀滅)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_lavabolt": { n: "龍騎士書板(岩漿之箭)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_lavaspit": { n: "龍騎士書板(岩漿噴吐)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_reaper": { n: "龍騎士書板(驚悚死神)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_slaughter": { n: "龍騎士書板(屠宰者)", t: "skillbk", c: "法術", legend: false },
+  "bk_dragon_terror": { n: "龍騎士書板(恐懼無助)", t: "skillbk", c: "法術", legend: false },
+  "bk_earthquake": { n: "魔法書(地裂術)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_attrfire": { n: "精靈水晶(屬性之火)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_blazewpn": { n: "精靈水晶(烈炎武器)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_dancefire": { n: "精靈水晶(舞躍之火)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_earthbless": { n: "精靈水晶(大地的祝福)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_earthguard": { n: "精靈水晶(大地防護)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_earthshield": { n: "精靈水晶(大地屏障)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_eleres": { n: "精靈水晶(屬性防禦)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_energyboost": { n: "精靈水晶(能量激發)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_firewpn": { n: "精靈水晶(火焰武器)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_flamesoul": { n: "精靈水晶(烈焰之魂)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_groundtrap": { n: "精靈水晶(地面障礙)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_lifebless": { n: "精靈水晶(生命的祝福)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_lifespring": { n: "精靈水晶(生命之泉)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_magicerase": { n: "精靈水晶(魔法消除)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_mind": { n: "精靈水晶(心靈轉換)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_mirror": { n: "精靈水晶(鏡反射)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_mr": { n: "精靈水晶(魔法防禦)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_physboost": { n: "精靈水晶(體能激發)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_purify": { n: "精靈水晶(淨化精神)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_release": { n: "精靈水晶(釋放元素)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_seal": { n: "精靈水晶(封印禁地)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_singleres": { n: "精靈水晶(單屬性防禦)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_soul": { n: "精靈水晶(魂體轉換)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_steelguard": { n: "精靈水晶(鋼鐵防護)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_stormeye": { n: "精靈水晶(暴風之眼)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_stormshot": { n: "精靈水晶(暴風神射)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_summon": { n: "精靈水晶(召喚屬性精靈)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_summon2": { n: "精靈水晶(召喚強力屬性精靈)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_triple": { n: "精靈水晶(三重矢)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_watervital": { n: "精靈水晶(水之元氣)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_winddash": { n: "精靈水晶(風之疾走)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_windshot": { n: "精靈水晶(風之神射)", t: "skillbk", c: "法術", legend: false },
+  "bk_elf_worldtree": { n: "精靈水晶(世界樹的呼喚)", t: "skillbk", c: "法術", legend: false },
+  "bk_ench_wpn": { n: "魔法書(擬似魔法武器)", t: "skillbk", c: "法術", legend: false },
+  "bk_energy_sense": { n: "魔法書(能量感測)", t: "skillbk", c: "法術", legend: false },
+  "bk_fire_prison": { n: "魔法書(火牢)", t: "skillbk", c: "法術", legend: false },
+  "bk_fire_storm": { n: "魔法書(火風暴)", t: "skillbk", c: "法術", legend: false },
+  "bk_firearrow": { n: "魔法書(火箭)", t: "skillbk", c: "法術", legend: false },
+  "bk_fireball": { n: "魔法書(燃燒的火球)", t: "skillbk", c: "法術", legend: false },
+  "bk_full_heal": { n: "魔法書(全部治癒術)", t: "skillbk", c: "法術", legend: false },
+  "bk_greater_haste": { n: "魔法書(強力加速術)", t: "skillbk", c: "法術", legend: false },
+  "bk_haste_spell": { n: "魔法書(加速術)", t: "skillbk", c: "法術", legend: false },
+  "bk_heal1": { n: "魔法書(初級治癒術)", t: "skillbk", c: "法術", legend: false },
+  "bk_heal2": { n: "魔法書(高級治癒術)", t: "skillbk", c: "法術", legend: false },
+  "bk_heal_mid": { n: "魔法書(中級治癒術)", t: "skillbk", c: "法術", legend: false },
+  "bk_hell_fang": { n: "魔法書(地獄之牙)", t: "skillbk", c: "法術", legend: false },
+  "bk_holy_barrier": { n: "魔法書(聖結界)", t: "skillbk", c: "法術", legend: false },
+  "bk_holy_dash": { n: "魔法書(神聖疾走)", t: "skillbk", c: "法術", legend: false },
+  "bk_holy_light": { n: "魔法書(聖潔之光)", t: "skillbk", c: "法術", legend: false },
+  "bk_holy_wpn": { n: "魔法書(神聖武器)", t: "skillbk", c: "法術", legend: false },
+  "bk_ice_lance": { n: "魔法書(冰矛圍籬)", t: "skillbk", c: "法術", legend: false },
+  "bk_ice_spike": { n: "魔法書(冰錐)", t: "skillbk", c: "法術", legend: false },
+  "bk_icearrow": { n: "魔法書(冰箭)", t: "skillbk", c: "法術", legend: false },
+  "bk_invisible": { n: "魔法書(隱身術)", t: "skillbk", c: "法術", legend: false },
+  "bk_lightarrow": { n: "魔法書(光箭)", t: "skillbk", c: "法術", legend: false },
+  "bk_load_up": { n: "魔法書(負重強化)", t: "skillbk", c: "法術", legend: false },
+  "bk_magic_shield": { n: "魔法書(魔法屏障)", t: "skillbk", c: "法術", legend: false },
+  "bk_mana_drain": { n: "魔法書(魔力奪取)", t: "skillbk", c: "法術", legend: false },
+  "bk_meditation": { n: "魔法書(冥想術)", t: "skillbk", c: "法術", legend: false },
+  "bk_meteor": { n: "魔法書(流星雨)", t: "skillbk", c: "法術", legend: false },
+  "bk_mummy_curse": { n: "魔法書(木乃伊的詛咒)", t: "skillbk", c: "法術", legend: false },
+  "bk_poison_curse": { n: "魔法書(毒咒)", t: "skillbk", c: "法術", legend: false },
+  "bk_quake": { n: "魔法書(震裂術)", t: "skillbk", c: "法術", legend: false },
+  "bk_reduction_armor": { n: "技術書(增幅防禦)", t: "skillbk", c: "法術", legend: false },
+  "bk_regen": { n: "魔法書(體力回復術)", t: "skillbk", c: "法術", legend: false },
+  "bk_resurrection": { n: "魔法書(返生術)", t: "skillbk", c: "法術", legend: false },
+  "bk_reveal": { n: "魔法書(無所遁形術)", t: "skillbk", c: "法術", legend: false },
+  "bk_rock_prison": { n: "魔法書(岩牢)", t: "skillbk", c: "法術", legend: false },
+  "bk_seal": { n: "魔法書(魔法封印)", t: "skillbk", c: "法術", legend: false },
+  "bk_shield": { n: "魔法書(保護罩)", t: "skillbk", c: "法術", legend: false },
+  "bk_shield2": { n: "魔法書(鎧甲護持)", t: "skillbk", c: "法術", legend: false },
+  "bk_shock_stun": { n: "技術書(衝擊之暈)", t: "skillbk", c: "法術", legend: false },
+  "bk_sleep_mist": { n: "魔法書(沉睡之霧)", t: "skillbk", c: "法術", legend: false },
+  "bk_slow": { n: "魔法書(緩速術)", t: "skillbk", c: "法術", legend: false },
+  "bk_solid_shield": { n: "技術書(堅固防護)", t: "skillbk", c: "法術", legend: false },
+  "bk_soul_up": { n: "魔法書(靈魂昇華)", t: "skillbk", c: "法術", legend: false },
+  "bk_spike_armor": { n: "技術書(尖刺盔甲)", t: "skillbk", c: "法術", legend: false },
+  "bk_str_up": { n: "魔法書(體魄強健術)", t: "skillbk", c: "法術", legend: false },
+  "bk_summon": { n: "魔法書(召喚術)", t: "skillbk", c: "法術", legend: false },
+  "bk_sunlight": { n: "魔法書(日光術)", t: "skillbk", c: "法術", legend: false },
+  "bk_teleport": { n: "魔法書(指定傳送)", t: "skillbk", c: "法術", legend: false },
+  "bk_thunder": { n: "魔法書(極道落雷)", t: "skillbk", c: "法術", legend: false },
+  "bk_thunder_storm": { n: "魔法書(雷霆風暴)", t: "skillbk", c: "法術", legend: false },
+  "bk_tornado": { n: "魔法書(龍捲風)", t: "skillbk", c: "法術", legend: false },
+  "bk_undead_bane": { n: "魔法書(起死回生術)", t: "skillbk", c: "法術", legend: false },
+  "bk_vampire": { n: "魔法書(吸血鬼之吻)", t: "skillbk", c: "法術", legend: false },
+  "bk_weaken": { n: "魔法書(弱化術)", t: "skillbk", c: "法術", legend: false },
+  "bk_windblade": { n: "魔法書(風刃)", t: "skillbk", c: "法術", legend: false },
+  "bk_zombie": { n: "魔法書(造屍術)", t: "skillbk", c: "法術", legend: false },
+  "blt_body": { n: "身體腰帶", t: "acc", c: "腰帶", legend: false },
+  "blt_dark": { n: "黑暗腰帶", t: "acc", c: "腰帶", legend: false },
+  "blt_giant_ring": { n: "古代巨人戒指", t: "acc", c: "腰帶", legend: true },
+  "blt_mr": { n: "抗魔皮帶", t: "acc", c: "腰帶", legend: false },
+  "blt_thebes_osiris": { n: "底比斯歐西里斯腰帶", t: "acc", c: "腰帶", legend: false },
+  "blt_titan": { n: "泰坦皮帶", t: "acc", c: "腰帶", legend: false },
+  "bot_baless": { n: "巴列斯長靴", t: "arm", c: "靴子", legend: true },
+  "bot_baranka": { n: "巴蘭卡長靴", t: "arm", c: "靴子", legend: false },
+  "bot_dark": { n: "黑暗長靴", t: "arm", c: "靴子", legend: false },
+  "bot_darkdweller": { n: "黑暗棲林者長靴", t: "arm", c: "靴子", legend: false },
+  "bot_darkelf": { n: "黑暗妖精涼鞋", t: "arm", c: "靴子", legend: false },
+  "bot_demon": { n: "惡魔長靴", t: "arm", c: "靴子", legend: true },
+  "bot_dk": { n: "死亡騎士長靴", t: "arm", c: "靴子", legend: true },
+  "bot_fallen": { n: "墮落長靴", t: "arm", c: "靴子", legend: true },
+  "bot_kingbeast": { n: "魔獸軍王長靴", t: "arm", c: "靴子", legend: true },
+  "bot_official": { n: "武官長靴", t: "arm", c: "靴子", legend: false },
+  "bot_priest": { n: "神官長靴", t: "arm", c: "靴子", legend: false },
+  "bot_rasta": { n: "拉斯塔巴德長靴", t: "arm", c: "靴子", legend: false },
+  "bot_short": { n: "短統靴", t: "arm", c: "靴子", legend: false },
+  "candle": { n: "回憶蠟燭", t: "misc", c: "其他", legend: false },
+  "clk_antqueen_gold": { n: "巨蟻女皇的金翅膀", t: "arm", c: "披風", legend: true },
+  "clk_antqueen_silver": { n: "巨蟻女皇的銀翅膀", t: "arm", c: "披風", legend: true },
+  "clk_blacktiger": { n: "黑虎皮斗篷", t: "arm", c: "披風", legend: false },
+  "clk_chaos": { n: "混沌斗篷", t: "arm", c: "披風", legend: false },
+  "clk_dark": { n: "黑暗斗篷", t: "arm", c: "披風", legend: false },
+  "clk_death": { n: "死亡斗篷", t: "arm", c: "披風", legend: true },
+  "clk_dragon": { n: "龍騎士斗篷", t: "arm", c: "披風", legend: false },
+  "clk_elf": { n: "精靈斗篷", t: "arm", c: "披風", legend: false },
+  "clk_fallen": { n: "墮落斗篷", t: "arm", c: "披風", legend: true },
+  "clk_flame_blood": { n: "炎魔的血光斗篷", t: "arm", c: "披風", legend: true },
+  "clk_illu": { n: "幻術士斗篷", t: "arm", c: "披風", legend: false },
+  "clk_kingnecro": { n: "冥法軍王斗篷", t: "arm", c: "披風", legend: true },
+  "clk_lich": { n: "巫妖斗篷", t: "arm", c: "披風", legend: true },
+  "clk_marcus": { n: "馬昆斯斗篷", t: "arm", c: "披風", legend: true },
+  "clk_mr": { n: "抗魔法斗篷", t: "arm", c: "披風", legend: false },
+  "clk_oasis": { n: "歐西斯斗篷", t: "arm", c: "披風", legend: false },
+  "clk_pride_earth": { n: "地屬性斗篷", t: "arm", c: "披風", legend: false },
+  "clk_pride_fire": { n: "火屬性斗篷", t: "arm", c: "披風", legend: false },
+  "clk_pride_water": { n: "水屬性斗篷", t: "arm", c: "披風", legend: false },
+  "clk_pride_wind": { n: "風屬性斗篷", t: "arm", c: "披風", legend: false },
+  "clk_priest": { n: "神官斗篷", t: "arm", c: "披風", legend: false },
+  "clk_silver_light": { n: "銀光斗篷", t: "arm", c: "披風", legend: false },
+  "clk_wolf": { n: "狼皮斗篷", t: "arm", c: "披風", legend: false },
+  "glv_baranka": { n: "巴蘭卡手套", t: "arm", c: "手套", legend: false },
+  "glv_chaos": { n: "混沌手套", t: "arm", c: "手套", legend: false },
+  "glv_crystal": { n: "水晶手套", t: "arm", c: "手套", legend: false },
+  "glv_death": { n: "死亡手套", t: "arm", c: "手套", legend: true },
+  "glv_demon": { n: "惡魔手套", t: "arm", c: "手套", legend: true },
+  "glv_dk": { n: "死亡騎士手套", t: "arm", c: "手套", legend: true },
+  "glv_earth_spirit": { n: "地靈手套", t: "arm", c: "手套", legend: false },
+  "glv_fallen": { n: "墮落手套", t: "arm", c: "手套", legend: true },
+  "glv_fire_spirit": { n: "火靈手套", t: "arm", c: "手套", legend: false },
+  "glv_glove": { n: "手套", t: "arm", c: "手套", legend: false },
+  "glv_kingassassin": { n: "暗殺軍王手套", t: "arm", c: "手套", legend: true },
+  "glv_official": { n: "武官手套", t: "arm", c: "手套", legend: false },
+  "glv_priest": { n: "神官手套", t: "arm", c: "手套", legend: false },
+  "glv_reaper": { n: "死神之手", t: "arm", c: "手套", legend: false },
+  "glv_water_spirit": { n: "水靈手套", t: "arm", c: "手套", legend: false },
+  "glv_wind_spirit": { n: "風靈手套", t: "arm", c: "手套", legend: false },
+  "hlm_baranka": { n: "巴蘭卡頭盔", t: "arm", c: "頭盔", legend: false },
+  "hlm_bone": { n: "骷髏頭盔", t: "arm", c: "頭盔", legend: false },
+  "hlm_chaos": { n: "混沌頭盔", t: "arm", c: "頭盔", legend: false },
+  "hlm_dark": { n: "黑暗頭飾", t: "arm", c: "頭盔", legend: false },
+  "hlm_darkelf": { n: "黑暗妖精頭箍", t: "arm", c: "頭盔", legend: false },
+  "hlm_demon": { n: "惡魔頭盔", t: "arm", c: "頭盔", legend: true },
+  "hlm_dk": { n: "死亡騎士頭盔", t: "arm", c: "頭盔", legend: true },
+  "hlm_elf": { n: "精靈皮盔", t: "arm", c: "頭盔", legend: false },
+  "hlm_gnome": { n: "侏儒鐵盔", t: "arm", c: "頭盔", legend: false },
+  "hlm_kurt": { n: "克特頭盔", t: "arm", c: "頭盔", legend: true },
+  "hlm_mage": { n: "法師之帽", t: "arm", c: "頭盔", legend: false },
+  "hlm_mambo": { n: "曼波帽子", t: "arm", c: "頭盔", legend: false },
+  "hlm_mr": { n: "抗魔法頭盔", t: "arm", c: "頭盔", legend: false },
+  "hlm_mummy_crown": { n: "木乃伊王的王冠", t: "arm", c: "頭盔", legend: true },
+  "hlm_oasis": { n: "歐西斯頭盔", t: "arm", c: "頭盔", legend: false },
+  "hlm_official": { n: "武官頭盔", t: "arm", c: "頭盔", legend: false },
+  "hlm_priest": { n: "神官頭飾", t: "arm", c: "頭盔", legend: false },
+  "hlm_silver": { n: "銀釘皮帽", t: "arm", c: "頭盔", legend: false },
+  "hlm_steel": { n: "鋼鐵頭盔", t: "arm", c: "頭盔", legend: false },
+  "hlm_wind": { n: "風之頭盔", t: "arm", c: "頭盔", legend: false },
+  "item_ancient_book": { n: "古代黑妖之秘笈", t: "etc", c: "道具", legend: false },
+  "item_ancient_scroll": { n: "古代的卷軸", t: "etc", c: "道具", legend: false },
+  "item_ancientkey": { n: "古代鑰匙", t: "", c: "道具", legend: false },
+  "item_ant_bark": { n: "污濁安特的樹皮", t: "", c: "道具", legend: false },
+  "item_ant_branch": { n: "污濁安特的樹枝", t: "", c: "道具", legend: false },
+  "item_ant_fruit": { n: "污濁安特的水果", t: "", c: "道具", legend: false },
+  "item_blueflute": { n: "藍色長笛", t: "", c: "道具", legend: false },
+  "item_chaos_key": { n: "混沌鑰匙", t: "etc", c: "道具", legend: false },
+  "item_crystal_ball": { n: "水晶球", t: "", c: "道具", legend: false },
+  "item_dantes_letter": { n: "丹特斯的召書", t: "etc", c: "道具", legend: false },
+  "item_death_oath": { n: "死亡誓約", t: "", c: "道具", legend: false },
+  "item_demon_search": { n: "妖魔搜索文件", t: "etc", c: "道具", legend: false },
+  "item_demon_spy": { n: "妖魔密使首領間諜書", t: "etc", c: "道具", legend: false },
+  "item_dragon_claw": { n: "飛龍的爪子", t: "", c: "道具", legend: false },
+  "item_dragon_egg": { n: "幼龍蛋", t: "etc", c: "道具", legend: false },
+  "item_elf_whisper": { n: "精靈的私語", t: "etc", c: "道具", legend: false },
+  "item_elmore_heart": { n: "艾爾摩將軍之心", t: "", c: "道具", legend: false },
+  "item_fallen_key": { n: "墮落鑰匙", t: "etc", c: "道具", legend: false },
+  "item_forgotten_greatsword": { n: "受封印 被遺忘的巨劍", t: "etc", c: "道具", legend: false },
+  "item_forgotten_leather": { n: "被遺忘的皮盔甲", t: "etc", c: "道具", legend: false },
+  "item_forgotten_plate": { n: "被遺忘的金屬盔甲", t: "etc", c: "道具", legend: false },
+  "item_forgotten_robe": { n: "被遺忘的長袍", t: "etc", c: "道具", legend: false },
+  "item_forgotten_scale": { n: "被遺忘的鱗甲", t: "etc", c: "道具", legend: false },
+  "item_forgotten_sword": { n: "受封印 被遺忘的劍", t: "etc", c: "道具", legend: false },
+  "item_forgotten_xbow": { n: "受封印 被遺忘的弩槍", t: "etc", c: "道具", legend: false },
+  "item_king_key": { n: "軍王的鑰匙", t: "", c: "道具", legend: false },
+  "item_lizard_horn": { n: "蜥蜴的角", t: "", c: "道具", legend: false },
+  "item_mastery_proof": { n: "精通之證", t: "", c: "道具", legend: false },
+  "item_nightvision": { n: "夜之視野", t: "", c: "道具", legend: false },
+  "item_olin_diary": { n: "歐林的日記本", t: "etc", c: "道具", legend: false },
+  "item_orc_amulet": { n: "妖魔戰士護身符", t: "", c: "道具", legend: false },
+  "item_orc_elder_head": { n: "妖魔長老首級", t: "", c: "道具", legend: false },
+  "item_osiris_box_basic": { n: "上鎖的歐西里斯初級寶箱", t: "misc", c: "道具", legend: false },
+  "item_osiris_box_high": { n: "上鎖的歐西里斯高級寶箱", t: "misc", c: "道具", legend: false },
+  "item_sealed_intel": { n: "密封的情報書", t: "etc", c: "道具", legend: false },
+  "item_shadow_temple_key": { n: "暗影神殿鑰匙", t: "etc", c: "道具", legend: false },
+  "item_soul_orb": { n: "靈魂之球", t: "misc", c: "道具", legend: false },
+  "item_soulfire_ash": { n: "靈魂之火灰燼", t: "etc", c: "道具", legend: false },
+  "item_spy_report": { n: "間諜報告書", t: "etc", c: "道具", legend: false },
+  "item_thebes_altar_key": { n: "底比斯歐西里斯祭壇鑰匙", t: "", c: "道具", legend: false },
+  "item_time_orb": { n: "完成的時間水晶球", t: "", c: "道具", legend: false },
+  "item_unknown_spear": { n: "不為人知的矛", t: "etc", c: "道具", legend: false },
+  "item_wind_tear": { n: "風之淚", t: "etc", c: "道具", legend: false },
+  "item_wyvern_blood": { n: "翼龍之血", t: "", c: "道具", legend: false },
+  "item_yeti_head": { n: "雪怪首級", t: "", c: "道具", legend: false },
+  "item_yeti_heart": { n: "雪怪之心", t: "etc", c: "道具", legend: false },
+  "mat_black_mithril": { n: "黑色米索莉", t: "etc", c: "材料", legend: false },
+  "mat_blackmithril_plate": { n: "黑色米索莉金屬板", t: "etc", c: "材料", legend: false },
+  "mat_blackstone2": { n: "二級黑魔石", t: "", c: "材料", legend: false },
+  "mat_blackstone3": { n: "三級黑魔石", t: "", c: "材料", legend: false },
+  "mat_blackstone4": { n: "四級黑魔石", t: "", c: "材料", legend: false },
+  "mat_chaos_head": { n: "混沌首級", t: "etc", c: "材料", legend: false },
+  "mat_chimera_dragon": { n: "奇美拉之皮(龍)", t: "etc", c: "材料", legend: false },
+  "mat_chimera_goat": { n: "奇美拉之皮(山羊)", t: "etc", c: "材料", legend: false },
+  "mat_chimera_lion": { n: "奇美拉之皮(獅子)", t: "etc", c: "材料", legend: false },
+  "mat_chimera_snake": { n: "奇美拉之皮(蛇)", t: "etc", c: "材料", legend: false },
+  "mat_crack_core": { n: "龜裂之核", t: "", c: "材料", legend: false },
+  "mat_crest_assassin": { n: "暗殺軍王徽印", t: "", c: "材料", legend: false },
+  "mat_crest_beast": { n: "魔獸軍王徽印", t: "", c: "材料", legend: false },
+  "mat_crest_law": { n: "法令軍王徽印", t: "", c: "材料", legend: false },
+  "mat_crest_necro": { n: "冥法軍王徽印", t: "", c: "材料", legend: false },
+  "mat_cursed_leather_earth": { n: "詛咒的皮革(地)", t: "etc", c: "材料", legend: false },
+  "mat_cursed_leather_fire": { n: "詛咒的皮革(火)", t: "etc", c: "材料", legend: false },
+  "mat_cursed_leather_water": { n: "詛咒的皮革(水)", t: "etc", c: "材料", legend: false },
+  "mat_cursed_leather_wind": { n: "詛咒的皮革(風)", t: "etc", c: "材料", legend: false },
+  "mat_death_head": { n: "死亡首級", t: "etc", c: "材料", legend: false },
+  "mat_demon_anklet_black": { n: "惡魔的黑色腳鐐", t: "etc", c: "材料", legend: false },
+  "mat_demon_anklet_blue": { n: "惡魔的藍色腳鐐", t: "etc", c: "材料", legend: false },
+  "mat_demon_anklet_red": { n: "惡魔的紅色腳鐐", t: "etc", c: "材料", legend: false },
+  "mat_demon_anklet_white": { n: "惡魔的白色腳鐐", t: "etc", c: "材料", legend: false },
+  "mat_earth_breath": { n: "土之氣息", t: "", c: "材料", legend: false },
+  "mat_fallen_fang": { n: "墮落之牙", t: "etc", c: "材料", legend: false },
+  "mat_fallen_hand": { n: "墮落之手", t: "etc", c: "材料", legend: false },
+  "mat_fallen_head": { n: "墮落首級", t: "etc", c: "材料", legend: false },
+  "mat_fallen_poison": { n: "墮落之毒", t: "etc", c: "材料", legend: false },
+  "mat_fallen_scythe": { n: "墮落鐮刀", t: "etc", c: "材料", legend: false },
+  "mat_fallen_tongue": { n: "墮落之舌", t: "etc", c: "材料", legend: false },
+  "mat_fire_breath": { n: "火之氣息", t: "", c: "材料", legend: false },
+  "mat_flame_claw": { n: "炎魔之爪", t: "etc", c: "材料", legend: false },
+  "mat_flame_heart": { n: "炎魔之心", t: "etc", c: "材料", legend: false },
+  "mat_flame_sword": { n: "炎魔之劍", t: "etc", c: "材料", legend: false },
+  "mat_griffon_feather": { n: "格利芬羽毛", t: "", c: "材料", legend: false },
+  "mat_legion_assassin": { n: "暗殺軍團印記", t: "", c: "材料", legend: false },
+  "mat_legion_beast": { n: "魔獸軍團印記", t: "", c: "材料", legend: false },
+  "mat_legion_law": { n: "法令軍團印記", t: "", c: "材料", legend: false },
+  "mat_legion_necro": { n: "冥法軍團印記", t: "", c: "材料", legend: false },
+  "mat_osiris_basic_down": { n: "歐西里斯初級寶箱碎片(下)", t: "", c: "材料", legend: false },
+  "mat_osiris_basic_up": { n: "歐西里斯初級寶箱碎片(上)", t: "", c: "材料", legend: false },
+  "mat_osiris_high_down": { n: "歐西里斯高級寶箱碎片(下)", t: "", c: "材料", legend: false },
+  "mat_osiris_high_up": { n: "歐西里斯高級寶箱碎片(上)", t: "", c: "材料", legend: false },
+  "mat_rift_shard": { n: "時空裂痕碎片", t: "", c: "材料", legend: false },
+  "mat_rough_stone": { n: "原石碎片", t: "", c: "材料", legend: false },
+  "mat_silver": { n: "銀", t: "", c: "材料", legend: false },
+  "mat_silver_plate": { n: "銀金屬板", t: "etc", c: "材料", legend: false },
+  "mat_silverore": { n: "銀礦石", t: "", c: "材料", legend: false },
+  "mat_soulstone_shard": { n: "靈魂石碎片", t: "etc", c: "材料", legend: false },
+  "mat_unicorn_horn": { n: "神聖獨角獸之角", t: "", c: "材料", legend: false },
+  "mat_unknown_axe": { n: "不為人知的斧", t: "etc", c: "材料", legend: false },
+  "mat_water_breath": { n: "水之氣息", t: "", c: "材料", legend: false },
+  "mat_wind_breath": { n: "風之氣息", t: "", c: "材料", legend: false },
+  "mem_avatar": { n: "記憶水晶(幻覺：化身)", t: "skillbk", c: "其他", legend: false },
+  "mem_confuse": { n: "記憶水晶(混亂)", t: "skillbk", c: "其他", legend: false },
+  "mem_crush": { n: "記憶水晶(粉碎能量)", t: "skillbk", c: "其他", legend: false },
+  "mem_cube_burn": { n: "記憶水晶(立方：燃燒)", t: "skillbk", c: "其他", legend: false },
+  "mem_cube_harmony": { n: "記憶水晶(立方：和諧)", t: "skillbk", c: "其他", legend: false },
+  "mem_cube_quake": { n: "記憶水晶(立方：地裂)", t: "skillbk", c: "其他", legend: false },
+  "mem_cube_shock": { n: "記憶水晶(立方：衝擊)", t: "skillbk", c: "其他", legend: false },
+  "mem_endure": { n: "記憶水晶(耐力)", t: "skillbk", c: "其他", legend: false },
+  "mem_fantasy": { n: "記憶水晶(幻想)", t: "skillbk", c: "其他", legend: false },
+  "mem_focus": { n: "記憶水晶(專注)", t: "skillbk", c: "其他", legend: false },
+  "mem_golem": { n: "記憶水晶(幻覺：鑽石高崙)", t: "skillbk", c: "其他", legend: false },
+  "mem_insight": { n: "記憶水晶(洞察)", t: "skillbk", c: "其他", legend: false },
+  "mem_lich": { n: "記憶水晶(幻覺：巫妖)", t: "skillbk", c: "其他", legend: false },
+  "mem_mindbreak": { n: "記憶水晶(心靈破壞)", t: "skillbk", c: "其他", legend: false },
+  "mem_mirror": { n: "記憶水晶(鏡像)", t: "skillbk", c: "其他", legend: false },
+  "mem_ogre": { n: "記憶水晶(幻覺：歐吉)", t: "skillbk", c: "其他", legend: false },
+  "mem_pain": { n: "記憶水晶(疼痛的歡愉)", t: "skillbk", c: "其他", legend: false },
+  "mem_panic": { n: "記憶水晶(恐慌)", t: "skillbk", c: "其他", legend: false },
+  "mem_skullbreak": { n: "記憶水晶(骷髏毀壞)", t: "skillbk", c: "其他", legend: false },
+  "new_collar_beagle": { n: "項圈 (小獵犬)", t: "", c: "其他", legend: false },
+  "new_collar_fox": { n: "項圈 (狐狸)", t: "", c: "其他", legend: false },
+  "new_collar_rabbit": { n: "項圈(暴走兔)", t: "", c: "其他", legend: false },
+  "new_collar_stbernard": { n: "項圈(聖伯納)", t: "", c: "其他", legend: false },
+  "new_fruit_beagle": { n: "進化果實：小獵犬", t: "pot", c: "其他", legend: false },
+  "new_fruit_fox": { n: "進化果實：狐狸", t: "pot", c: "其他", legend: false },
+  "new_fruit_rabbit": { n: "進化果實：暴走兔", t: "pot", c: "其他", legend: false },
+  "new_fruit_stbernard": { n: "進化果實：聖伯納", t: "pot", c: "其他", legend: false },
+  "new_item_139": { n: "精靈餅乾", t: "pot", c: "其他", legend: false },
+  "new_item_140": { n: "慎重藥水", t: "pot", c: "其他", legend: false },
+  "new_item_141": { n: "安特的水果", t: "pot", c: "其他", legend: false },
+  "new_item_142": { n: "哨子", t: "pot", c: "其他", legend: false },
+  "new_item_143": { n: "肉", t: "pot", c: "其他", legend: false },
+  "new_item_144": { n: "夏洛伯之爪", t: "", c: "其他", legend: false },
+  "new_item_145": { n: "阿吐巴圖騰", t: "", c: "其他", legend: false },
+  "new_item_146": { n: "那魯加圖騰", t: "", c: "其他", legend: false },
+  "new_item_147": { n: "都達瑪拉圖騰", t: "", c: "其他", legend: false },
+  "new_item_148": { n: "甘地圖騰", t: "", c: "其他", legend: false },
+  "new_item_149": { n: "羅孚圖騰", t: "", c: "其他", legend: false },
+  "new_item_150": { n: "魔法寶石", t: "", c: "其他", legend: false },
+  "new_item_151": { n: "鑽石", t: "", c: "其他", legend: false },
+  "new_item_152": { n: "品質鑽石", t: "", c: "其他", legend: false },
+  "new_item_153": { n: "高品質鑽石", t: "", c: "其他", legend: false },
+  "new_item_154": { n: "綠寶石", t: "", c: "其他", legend: false },
+  "new_item_155": { n: "品質綠寶石", t: "", c: "其他", legend: false },
+  "new_item_156": { n: "高品質綠寶石", t: "", c: "其他", legend: false },
+  "new_item_157": { n: "紅寶石", t: "", c: "其他", legend: false },
+  "new_item_158": { n: "品質紅寶石", t: "", c: "其他", legend: false },
+  "new_item_159": { n: "高品質紅寶石", t: "", c: "其他", legend: false },
+  "new_item_160": { n: "藍寶石", t: "", c: "其他", legend: false },
+  "new_item_161": { n: "品質藍寶石", t: "", c: "其他", legend: false },
+  "new_item_162": { n: "高品質藍寶石", t: "", c: "其他", legend: false },
+  "new_item_163": { n: "潘的鬃毛", t: "", c: "其他", legend: false },
+  "new_item_164": { n: "粗糙的米索莉塊", t: "", c: "其他", legend: false },
+  "new_item_165": { n: "元素石", t: "", c: "其他", legend: false },
+  "new_item_166": { n: "蘑菇汁", t: "", c: "其他", legend: false },
+  "new_item_167": { n: "食人巨魔的血", t: "", c: "其他", legend: false },
+  "new_item_168": { n: "線", t: "", c: "其他", legend: false },
+  "new_item_169": { n: "純粹的米索莉塊", t: "", c: "其他", legend: false },
+  "new_item_170": { n: "精靈粉末", t: "", c: "其他", legend: false },
+  "new_item_171": { n: "芮克妮的網", t: "", c: "其他", legend: false },
+  "new_item_172": { n: "安特的樹皮", t: "", c: "其他", legend: false },
+  "new_item_173": { n: "奧里哈魯根", t: "", c: "其他", legend: false },
+  "new_item_174": { n: "米索莉線", t: "", c: "其他", legend: false },
+  "new_item_175": { n: "芮克妮的蛻皮", t: "", c: "其他", legend: false },
+  "new_item_176": { n: "魔法笛子", t: "", c: "其他", legend: false },
+  "new_item_177": { n: "米索莉金屬板", t: "", c: "其他", legend: false },
+  "new_item_178": { n: "奧里哈魯根金屬板", t: "", c: "其他", legend: false },
+  "new_item_179": { n: "皮革", t: "", c: "其他", legend: false },
+  "new_item_180": { n: "金屬塊", t: "", c: "其他", legend: false },
+  "new_item_181": { n: "皮帶", t: "", c: "其他", legend: false },
+  "new_item_182": { n: "高級皮革", t: "", c: "其他", legend: false },
+  "new_item_183": { n: "骨頭碎片", t: "", c: "其他", legend: false },
+  "new_item_184": { n: "項圈 (杜賓狗)", t: "", c: "其他", legend: false },
+  "new_item_185": { n: "項圈 (狼)", t: "", c: "其他", legend: false },
+  "new_item_186": { n: "糖果", t: "", c: "其他", legend: false },
+  "new_item_187": { n: "藍色布料", t: "", c: "其他", legend: false },
+  "new_item_188": { n: "紅色布料", t: "", c: "其他", legend: false },
+  "new_item_189": { n: "白色布料", t: "", c: "其他", legend: false },
+  "new_item_190": { n: "水龍鱗", t: "", c: "其他", legend: false },
+  "new_item_191": { n: "地龍鱗", t: "", c: "其他", legend: false },
+  "new_item_192": { n: "火龍鱗", t: "", c: "其他", legend: false },
+  "new_item_193": { n: "風龍鱗", t: "", c: "其他", legend: false },
+  "new_item_194": { n: "阿西塔基奧的灰燼", t: "", c: "其他", legend: false },
+  "new_item_195": { n: "精靈玉", t: "", c: "其他", legend: false },
+  "new_item_196": { n: "古老的交易文件", t: "", c: "其他", legend: false },
+  "new_item_197": { n: "搜索狀", t: "", c: "其他", legend: false },
+  "new_item_198": { n: "黑騎士的誓約", t: "", c: "其他", legend: false },
+  "new_item_199": { n: "都達瑪拉妖魔魔法書", t: "", c: "其他", legend: false },
+  "new_item_200": { n: "那魯加妖魔魔法書", t: "", c: "其他", legend: false },
+  "new_item_201": { n: "甘地妖魔魔法書", t: "", c: "其他", legend: false },
+  "new_item_202": { n: "阿吐巴妖魔魔法書", t: "", c: "其他", legend: false },
+  "new_item_203": { n: "骷髏頭", t: "", c: "其他", legend: false },
+  "new_item_204": { n: "食屍鬼的指甲", t: "", c: "其他", legend: false },
+  "new_item_205": { n: "食屍鬼的牙齒", t: "", c: "其他", legend: false },
+  "new_item_206": { n: "龍龜甲", t: "", c: "其他", legend: false },
+  "new_item_207": { n: "生命的卷軸", t: "", c: "其他", legend: false },
+  "new_item_208": { n: "蛇女之鱗", t: "", c: "其他", legend: false },
+  "new_item_209": { n: "返生藥水", t: "", c: "其他", legend: false },
+  "new_item_210": { n: "感謝信", t: "", c: "其他", legend: false },
+  "new_item_211": { n: "村民的遺物", t: "", c: "其他", legend: false },
+  "new_item_212": { n: "不死族的骨頭", t: "", c: "其他", legend: false },
+  "new_item_213": { n: "受詛咒的精靈書", t: "", c: "其他", legend: false },
+  "new_item_214": { n: "不死族的鑰匙", t: "", c: "其他", legend: false },
+  "new_item_215": { n: "殭屍鑰匙", t: "", c: "其他", legend: false },
+  "new_item_216": { n: "骷髏鑰匙", t: "", c: "其他", legend: false },
+  "new_item_217": { n: "密室鑰匙", t: "", c: "其他", legend: false },
+  "new_item_218": { n: "神秘水晶球", t: "", c: "其他", legend: false },
+  "new_item_219": { n: "神秘魔杖", t: "", c: "其他", legend: false },
+  "new_item_220": { n: "蛇女房間鑰匙", t: "", c: "其他", legend: false },
+  "new_item_221": { n: "光明的鱗片", t: "", c: "其他", legend: false },
+  "new_item_222": { n: "畢克斯的羽毛", t: "", c: "其他", legend: false },
+  "new_item_223": { n: "畢克斯的沙漏", t: "", c: "其他", legend: false },
+  "new_item_224": { n: "贖罪聖書", t: "", c: "其他", legend: false },
+  "new_item_225": { n: "被偷的項鍊", t: "", c: "其他", legend: false },
+  "new_item_226": { n: "被偷的戒指", t: "", c: "其他", legend: false },
+  "new_item_227": { n: "獨眼巨人的血", t: "", c: "其他", legend: false },
+  "new_item_228": { n: "污染的精靈水晶(水)", t: "", c: "其他", legend: false },
+  "new_item_229": { n: "污染的精靈水晶(火)", t: "", c: "其他", legend: false },
+  "new_item_230": { n: "污染的精靈水晶(地)", t: "", c: "其他", legend: false },
+  "new_item_231": { n: "污染的精靈水晶(風)", t: "", c: "其他", legend: false },
+  "new_item_232": { n: "邪惡蜥蜴之鱗", t: "", c: "其他", legend: false },
+  "new_item_233": { n: "神秘魔力恢復藥水", t: "", c: "其他", legend: false },
+  "new_item_234": { n: "神秘慎重藥水", t: "", c: "其他", legend: false },
+  "new_item_235": { n: "思克巴女皇的神祕魔杖", t: "", c: "其他", legend: false },
+  "new_item_236": { n: "說話之島的回憶", t: "", c: "其他", legend: false },
+  "new_item_237": { n: "安特的樹枝", t: "", c: "其他", legend: false },
+  "new_item_238": { n: "項圈 (牧羊犬)", t: "", c: "其他", legend: false },
+  "new_item_239": { n: "潘朵拉抽獎卷", t: "", c: "其他", legend: false },
+  "new_item_240": { n: "變形怪的血", t: "", c: "其他", legend: false },
+  "new_item_241": { n: "王族搜索狀", t: "", c: "其他", legend: false },
+  "new_item_bless_acc": { n: "賦予飾品祝福卷軸", t: "misc", c: "其他", legend: false },
+  "new_item_bless_arm": { n: "賦予盔甲祝福卷軸", t: "misc", c: "其他", legend: false },
+  "new_item_bless_wpn": { n: "賦予武器祝福卷軸", t: "misc", c: "其他", legend: false },
+  "new_item_collar_husky": { n: "項圈 (哈士奇)", t: "", c: "其他", legend: false },
+  "new_item_elfwing": { n: "精靈羽翼", t: "", c: "其他", legend: false },
+  "new_item_mermaid_scale": { n: "人魚之鱗", t: "", c: "其他", legend: false },
+  "new_item_uncurse": { n: "解除詛咒的卷軸", t: "misc", c: "其他", legend: false },
+  "new_phoenix_heart": { n: "不死鳥之心", t: "etc", c: "其他", legend: false },
+  "panacea_cha": { n: "萬能藥(CHA)", t: "misc", c: "萬靈藥", legend: false },
+  "panacea_con": { n: "萬能藥(CON)", t: "misc", c: "萬靈藥", legend: false },
+  "panacea_dex": { n: "萬能藥(DEX)", t: "misc", c: "萬靈藥", legend: false },
+  "panacea_int": { n: "萬能藥(INT)", t: "misc", c: "萬靈藥", legend: false },
+  "panacea_str": { n: "萬能藥(STR)", t: "misc", c: "萬靈藥", legend: false },
+  "panacea_white": { n: "純白的萬能藥", t: "misc", c: "萬靈藥", legend: false },
+  "panacea_wis": { n: "萬能藥(WIS)", t: "misc", c: "萬靈藥", legend: false },
+  "pet_fang_hound": { n: "獵犬之牙", t: "acc", c: "其他", legend: false },
+  "pet_fang_ruin": { n: "破滅之牙", t: "acc", c: "其他", legend: false },
+  "pet_fang_steel": { n: "鋼鐵之牙", t: "acc", c: "其他", legend: false },
+  "pet_fang_victory": { n: "勝利之牙", t: "acc", c: "其他", legend: false },
+  "potion_blue": { n: "藍色藥水", t: "pot", c: "藥水", legend: false },
+  "potion_brave": { n: "勇敢藥水", t: "pot", c: "藥水", legend: false },
+  "potion_haste": { n: "自我加速藥水", t: "pot", c: "藥水", legend: false },
+  "potion_heal": { n: "紅色藥水", t: "pot", c: "藥水", legend: false },
+  "potion_strong": { n: "橙色藥水", t: "pot", c: "藥水", legend: false },
+  "potion_ult": { n: "白色藥水", t: "pot", c: "藥水", legend: false },
+  "quest_ring_beasttamer": { n: "馴獸師戒指", t: "", c: "任務", legend: false },
+  "quest_ring_darkdweller": { n: "黑暗棲林者戒指", t: "", c: "任務", legend: false },
+  "quest_ring_darkmage": { n: "黑法師戒指", t: "", c: "任務", legend: false },
+  "quest_ring_elfcaller": { n: "精靈使戒指", t: "", c: "任務", legend: false },
+  "quest_ring_summoner": { n: "喚獸師戒指", t: "", c: "任務", legend: false },
+  "rng_earth": { n: "地靈戒指", t: "acc", c: "戒指", legend: false },
+  "rng_fire": { n: "火靈戒指", t: "acc", c: "戒指", legend: false },
+  "rng_harpy": { n: "哈維戒指", t: "acc", c: "戒指", legend: false },
+  "rng_mr": { n: "抗魔戒指", t: "acc", c: "戒指", legend: false },
+  "rng_water": { n: "水靈戒指", t: "acc", c: "戒指", legend: false },
+  "rng_wind": { n: "風靈戒指", t: "acc", c: "戒指", legend: false },
+  "scroll_acc": { n: "對飾品施法的卷軸", t: "", c: "卷軸", legend: false },
+  "scroll_armor": { n: "對盔甲施法的卷軸", t: "", c: "卷軸", legend: false },
+  "scroll_armor_b": { n: "祝福的 對盔甲施法的卷軸", t: "", c: "卷軸", legend: false },
+  "scroll_armor_c": { n: "詛咒的 對盔甲施法的卷軸", t: "", c: "卷軸", legend: false },
+  "scroll_magicbarrier": { n: "魔法卷軸(魔法屏障)", t: "scroll", c: "卷軸", legend: false },
+  "scroll_poly": { n: "變形卷軸", t: "scroll", c: "卷軸", legend: false },
+  "scroll_revive": { n: "復活卷軸", t: "scroll", c: "卷軸", legend: false },
+  "scroll_teleport": { n: "瞬間移動卷軸", t: "scroll", c: "卷軸", legend: false },
+  "scroll_weapon": { n: "對武器施法的卷軸", t: "", c: "卷軸", legend: false },
+  "scroll_weapon_b": { n: "祝福的 對武器施法的卷軸", t: "", c: "卷軸", legend: false },
+  "scroll_weapon_c": { n: "詛咒的 對武器施法的卷軸", t: "", c: "卷軸", legend: false },
+  "set_0": { n: "皮套裝", t: "", c: "其他", legend: false },
+  "set_1": { n: "歐西斯套裝", t: "", c: "其他", legend: false },
+  "set_10": { n: "守護套裝", t: "", c: "其他", legend: false },
+  "set_11": { n: "四大軍王套裝", t: "", c: "其他", legend: false },
+  "set_12": { n: "惡魔套裝", t: "", c: "其他", legend: false },
+  "set_2": { n: "侏儒套裝", t: "", c: "其他", legend: false },
+  "set_3": { n: "銀釘套裝", t: "", c: "其他", legend: false },
+  "set_4": { n: "骷髏套裝", t: "", c: "其他", legend: false },
+  "set_5": { n: "鋼鐵套裝", t: "", c: "其他", legend: false },
+  "set_6": { n: "法師套裝", t: "", c: "其他", legend: false },
+  "set_7": { n: "死亡騎士套裝", t: "", c: "其他", legend: false },
+  "set_8": { n: "克特套裝", t: "", c: "其他", legend: false },
+  "set_9": { n: "抗魔套裝", t: "", c: "其他", legend: false },
+  "shd_bone": { n: "骷髏盾牌", t: "arm", c: "盾牌", legend: false },
+  "shd_death": { n: "死亡之盾", t: "arm", c: "盾牌", legend: true },
+  "shd_elf": { n: "精靈盾牌", t: "arm", c: "盾牌", legend: false },
+  "shd_gnome": { n: "侏儒圓盾", t: "arm", c: "盾牌", legend: false },
+  "shd_illu_book": { n: "幻術士法書", t: "arm", c: "盾牌", legend: false },
+  "shd_phantom_eye": { n: "幻象眼魔的心眼", t: "arm", c: "盾牌", legend: true },
+  "shd_priest_book": { n: "神官魔法書", t: "arm", c: "盾牌", legend: false },
+  "shd_rasta": { n: "拉斯塔巴德圓盾", t: "arm", c: "盾牌", legend: false },
+  "shd_redknight": { n: "紅騎士盾牌", t: "arm", c: "盾牌", legend: false },
+  "sherine_crystal": { n: "席琳結晶", t: "etc", c: "其他", legend: false },
+  "tsh_tshirt": { n: "T恤", t: "arm", c: "其他", legend: false },
+  "wpn_1": { n: "斧", t: "wpn", c: "武器", legend: false },
+  "wpn_10": { n: "木棒", t: "wpn", c: "武器", legend: false },
+  "wpn_11": { n: "匕首", t: "wpn", c: "武器", legend: false },
+  "wpn_12": { n: "貝卡合金", t: "wpn", c: "武器", legend: false },
+  "wpn_13": { n: "弗萊爾", t: "wpn", c: "武器", legend: false },
+  "wpn_14": { n: "闊矛", t: "wpn", c: "武器", legend: false },
+  "wpn_15": { n: "吉薩", t: "wpn", c: "武器", legend: false },
+  "wpn_16": { n: "戟", t: "wpn", c: "武器", legend: false },
+  "wpn_17": { n: "槍", t: "wpn", c: "武器", legend: false },
+  "wpn_18": { n: "露西錘", t: "wpn", c: "武器", legend: false },
+  "wpn_19": { n: "戰錘", t: "wpn", c: "武器", legend: false },
+  "wpn_2": { n: "釘錘", t: "wpn", c: "武器", legend: false },
+  "wpn_20": { n: "流星錘", t: "wpn", c: "武器", legend: false },
+  "wpn_21": { n: "帕提森", t: "wpn", c: "武器", legend: false },
+  "wpn_22": { n: "銀箭", t: "wpn", c: "武器", legend: false },
+  "wpn_23": { n: "侏儒鐵斧", t: "wpn", c: "武器", legend: false },
+  "wpn_24": { n: "精靈之矛", t: "wpn", c: "武器", legend: false },
+  "wpn_25": { n: "歐西斯之矛", t: "wpn", c: "武器", legend: false },
+  "wpn_26": { n: "小侏儒短劍", t: "wpn", c: "武器", legend: false },
+  "wpn_27": { n: "歐西斯短劍", t: "wpn", c: "武器", legend: false },
+  "wpn_28": { n: "三叉戟", t: "wpn", c: "武器", legend: false },
+  "wpn_29": { n: "尤米弓", t: "wpn", c: "武器", legend: false },
+  "wpn_2hsword": { n: "雙手劍", t: "wpn", c: "武器", legend: false },
+  "wpn_3": { n: "弓", t: "wpn", c: "武器", legend: false },
+  "wpn_30": { n: "米索莉箭", t: "wpn", c: "武器", legend: false },
+  "wpn_31": { n: "十字弓", t: "wpn", c: "武器", legend: false },
+  "wpn_32": { n: "獵人之弓", t: "wpn", c: "武器", legend: false },
+  "wpn_33": { n: "骰子匕首", t: "wpn", c: "武器", legend: false },
+  "wpn_34": { n: "短劍的劍身", t: "wpn", c: "武器", legend: false },
+  "wpn_35": { n: "長劍的劍身", t: "wpn", c: "武器", legend: false },
+  "wpn_36": { n: "奧里哈魯根的劍身", t: "wpn", c: "武器", legend: false },
+  "wpn_37": { n: "銀劍", t: "wpn", c: "武器", legend: false },
+  "wpn_38": { n: "美基魔法杖", t: "wpn", c: "武器", legend: false },
+  "wpn_39": { n: "潘的角", t: "wpn", c: "武器", legend: false },
+  "wpn_4": { n: "矛", t: "wpn", c: "武器", legend: false },
+  "wpn_40": { n: "覆上米索莉的角", t: "wpn", c: "武器", legend: false },
+  "wpn_41": { n: "覆上奧里哈魯根的角", t: "wpn", c: "武器", legend: false },
+  "wpn_5": { n: "箭", t: "wpn", c: "武器", legend: false },
+  "wpn_6": { n: "巴迪須", t: "wpn", c: "武器", legend: false },
+  "wpn_7": { n: "柴刀", t: "wpn", c: "武器", legend: false },
+  "wpn_8": { n: "歐西斯弓", t: "wpn", c: "武器", legend: false },
+  "wpn_9": { n: "闊劍", t: "wpn", c: "武器", legend: false },
+  "wpn_alien": { n: "亞連", t: "wpn", c: "武器", legend: false },
+  "wpn_ancient_axe": { n: "古代神之斧", t: "wpn", c: "武器", legend: true },
+  "wpn_ancient_spear": { n: "古代神之槍", t: "wpn", c: "武器", legend: true },
+  "wpn_assassin_mark": { n: "暗殺軍王之痕", t: "wpn", c: "武器", legend: false },
+  "wpn_baless": { n: "巴列斯魔杖", t: "wpn", c: "武器", legend: true },
+  "wpn_baphomet_wand": { n: "巴風特魔杖", t: "wpn", c: "武器", legend: true },
+  "wpn_baranka_claw": { n: "魔獸軍王之爪", t: "wpn", c: "武器", legend: false },
+  "wpn_baranka_steelclaw": { n: "巴蘭卡鋼爪", t: "wpn", c: "武器", legend: true },
+  "wpn_battleaxe": { n: "戰斧", t: "wpn", c: "武器", legend: false },
+  "wpn_berserker": { n: "狂戰士斧", t: "wpn", c: "武器", legend: false },
+  "wpn_blackflame_sword": { n: "黑焰之劍", t: "wpn", c: "武器", legend: false },
+  "wpn_blood_2hsword": { n: "血色巨劍", t: "wpn", c: "武器", legend: false },
+  "wpn_bow_rasta": { n: "拉斯塔巴德弓", t: "wpn", c: "武器", legend: false },
+  "wpn_chain_annihilator": { n: "消滅者鎖鏈劍", t: "wpn", c: "武器", legend: false },
+  "wpn_chain_bloodthirst": { n: "嗜血者鎖鏈劍", t: "wpn", c: "武器", legend: false },
+  "wpn_chain_destroyer": { n: "破滅者鎖鏈劍", t: "wpn", c: "武器", legend: false },
+  "wpn_chain_frost": { n: "寒冰鎖鏈劍", t: "wpn", c: "武器", legend: false },
+  "wpn_chain_resonance": { n: "共鳴鎖鏈劍", t: "wpn", c: "武器", legend: false },
+  "wpn_chaos_thorn": { n: "混沌之刺", t: "wpn", c: "武器", legend: false },
+  "wpn_claw_abyss": { n: "暗黑鋼爪", t: "wpn", c: "武器", legend: false },
+  "wpn_claw_bronze": { n: "青銅鋼爪", t: "wpn", c: "武器", legend: false },
+  "wpn_claw_damascus": { n: "大馬士革鋼爪", t: "wpn", c: "武器", legend: false },
+  "wpn_claw_dark": { n: "黑暗鋼爪", t: "wpn", c: "武器", legend: false },
+  "wpn_claw_gloom": { n: "幽暗鋼爪", t: "wpn", c: "武器", legend: false },
+  "wpn_claw_shadow": { n: "暗影鋼爪", t: "wpn", c: "武器", legend: false },
+  "wpn_claw_silver": { n: "銀光鋼爪", t: "wpn", c: "武器", legend: false },
+  "wpn_claw_steel": { n: "鋼鐵鋼爪", t: "wpn", c: "武器", legend: false },
+  "wpn_crimson_spear": { n: "深紅長矛", t: "wpn", c: "武器", legend: false },
+  "wpn_crystal_dagger": { n: "水晶短劍", t: "wpn", c: "武器", legend: false },
+  "wpn_crystalwand": { n: "水晶魔杖", t: "wpn", c: "武器", legend: false },
+  "wpn_dagger1": { n: "歐西斯匕首", t: "wpn", c: "武器", legend: false },
+  "wpn_dagger2": { n: "精靈匕首", t: "wpn", c: "武器", legend: false },
+  "wpn_dagger_rasta": { n: "拉斯塔巴德短劍", t: "wpn", c: "武器", legend: false },
+  "wpn_damascus": { n: "大馬士革刀", t: "wpn", c: "武器", legend: false },
+  "wpn_dark_sword": { n: "黑暗之劍", t: "wpn", c: "武器", legend: false },
+  "wpn_darkmage_wand": { n: "黑法師之杖", t: "wpn", c: "武器", legend: false },
+  "wpn_death_finger": { n: "死亡之指", t: "wpn", c: "武器", legend: false },
+  "wpn_demon_axe": { n: "惡魔斧頭", t: "wpn", c: "武器", legend: false },
+  "wpn_demon_claw": { n: "惡魔鋼爪", t: "wpn", c: "武器", legend: false },
+  "wpn_demon_dual": { n: "惡魔雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_demon_scythe": { n: "惡魔鐮刀", t: "wpn", c: "武器", legend: true },
+  "wpn_demon_sword": { n: "惡魔之劍", t: "wpn", c: "武器", legend: false },
+  "wpn_demon_xbow": { n: "惡魔十字弓", t: "wpn", c: "武器", legend: false },
+  "wpn_demonking_2hsword": { n: "惡魔王雙手劍", t: "wpn", c: "武器", legend: true },
+  "wpn_demonking_bow": { n: "惡魔王弓", t: "wpn", c: "武器", legend: true },
+  "wpn_demonking_dual": { n: "惡魔王雙刀", t: "wpn", c: "武器", legend: true },
+  "wpn_demonking_spear": { n: "惡魔王矛", t: "wpn", c: "武器", legend: true },
+  "wpn_demonking_wand": { n: "惡魔王魔杖", t: "wpn", c: "武器", legend: true },
+  "wpn_dk_flameblade": { n: "死亡騎士的烈炎之劍", t: "wpn", c: "武器", legend: true },
+  "wpn_dragon_2h": { n: "龍騎士雙手劍", t: "wpn", c: "武器", legend: false },
+  "wpn_dragonslayer": { n: "屠龍劍", t: "wpn", c: "武器", legend: true },
+  "wpn_dual_abyss": { n: "暗黑雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_dual_bronze": { n: "青銅雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_dual_damascus": { n: "大馬士革雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_dual_dark": { n: "黑暗雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_dual_gloom": { n: "幽暗雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_dual_rasta": { n: "拉斯塔巴德雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_dual_shadow": { n: "暗影雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_dual_silver": { n: "銀光雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_dual_steel": { n: "鋼鐵雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_elfbow": { n: "精靈弓", t: "wpn", c: "武器", legend: false },
+  "wpn_elfsword": { n: "精靈短劍", t: "wpn", c: "武器", legend: false },
+  "wpn_flaming_angel": { n: "熾炎天使弓", t: "wpn", c: "武器", legend: true },
+  "wpn_giantaxe": { n: "巨斧", t: "wpn", c: "武器", legend: false },
+  "wpn_greatsword": { n: "巨劍", t: "wpn", c: "武器", legend: false },
+  "wpn_halberd": { n: "法丘", t: "wpn", c: "武器", legend: false },
+  "wpn_hate_claw": { n: "恨之鋼爪", t: "wpn", c: "武器", legend: false },
+  "wpn_icequeen_wand": { n: "冰之女王魔杖", t: "wpn", c: "武器", legend: true },
+  "wpn_illu_wand": { n: "幻術士魔杖", t: "wpn", c: "武器", legend: false },
+  "wpn_invader": { n: "侵略者之劍", t: "wpn", c: "武器", legend: false },
+  "wpn_katana": { n: "武士刀", t: "wpn", c: "武器", legend: false },
+  "wpn_kurt_sword": { n: "克特之劍", t: "wpn", c: "武器", legend: true },
+  "wpn_laia_wand": { n: "蕾雅魔杖", t: "wpn", c: "武器", legend: true },
+  "wpn_longsword": { n: "長劍", t: "wpn", c: "武器", legend: false },
+  "wpn_mailbreaker": { n: "鎖子甲破壞者", t: "wpn", c: "武器", legend: false },
+  "wpn_mana_orb": { n: "瑪那水晶球", t: "arm", c: "武器", legend: false },
+  "wpn_manadagger": { n: "魔力短劍", t: "wpn", c: "武器", legend: true },
+  "wpn_manawand": { n: "瑪那魔杖", t: "wpn", c: "武器", legend: false },
+  "wpn_mithril_dagger": { n: "米索莉短劍", t: "wpn", c: "武器", legend: false },
+  "wpn_oakwand": { n: "橡木魔法杖", t: "wpn", c: "武器", legend: false },
+  "wpn_official_2h": { n: "武官雙手劍", t: "wpn", c: "武器", legend: false },
+  "wpn_old_greatsword": { n: "古老的巨劍", t: "wpn", c: "武器", legend: false },
+  "wpn_old_sword": { n: "古老的劍", t: "wpn", c: "武器", legend: false },
+  "wpn_old_xbow": { n: "古老的弩槍", t: "wpn", c: "武器", legend: false },
+  "wpn_ori_dagger": { n: "奧里哈魯根短劍", t: "wpn", c: "武器", legend: false },
+  "wpn_powerless_baless": { n: "失去魔力的巴列斯魔杖", t: "wpn", c: "武器", legend: false },
+  "wpn_powerless_baphomet": { n: "失去魔力的巴風特魔杖", t: "wpn", c: "武器", legend: false },
+  "wpn_priest_wand": { n: "神官魔杖", t: "wpn", c: "武器", legend: false },
+  "wpn_qigu_frost": { n: "寒冰奇古獸", t: "wpn", c: "武器", legend: false },
+  "wpn_qigu_meditate": { n: "冥想奇古獸", t: "wpn", c: "武器", legend: false },
+  "wpn_qigu_obsidian": { n: "黑曜石奇古獸", t: "wpn", c: "武器", legend: false },
+  "wpn_qigu_resonance": { n: "共鳴奇古獸", t: "wpn", c: "武器", legend: false },
+  "wpn_qigu_sapphire": { n: "藍寶石奇古獸", t: "wpn", c: "武器", legend: false },
+  "wpn_rapier": { n: "細劍", t: "wpn", c: "武器", legend: false },
+  "wpn_red_crystalwand": { n: "紅水晶魔杖", t: "wpn", c: "武器", legend: false },
+  "wpn_redflame_bow": { n: "赤焰之弓", t: "wpn", c: "武器", legend: false },
+  "wpn_redflame_sword": { n: "赤焰之劍", t: "wpn", c: "武器", legend: false },
+  "wpn_redknight": { n: "紅騎士之劍", t: "wpn", c: "武器", legend: false },
+  "wpn_scimitar": { n: "彎刀", t: "wpn", c: "武器", legend: false },
+  "wpn_shaha_arrow": { n: "沙哈之箭", t: "wpn", c: "武器", legend: false },
+  "wpn_shaha_bow": { n: "沙哈之弓", t: "wpn", c: "武器", legend: true },
+  "wpn_shortbow": { n: "短弓", t: "wpn", c: "武器", legend: false },
+  "wpn_shortsword": { n: "短劍", t: "wpn", c: "武器", legend: false },
+  "wpn_silveraxe": { n: "銀斧", t: "wpn", c: "武器", legend: false },
+  "wpn_silversword": { n: "銀長劍", t: "wpn", c: "武器", legend: false },
+  "wpn_siruge": { n: "瑟魯基之劍", t: "wpn", c: "武器", legend: false },
+  "wpn_small_katana": { n: "小武士刀", t: "wpn", c: "武器", legend: false },
+  "wpn_spear_rasta": { n: "拉斯塔巴德矛", t: "wpn", c: "武器", legend: false },
+  "wpn_strwand": { n: "力量魔法杖", t: "wpn", c: "武器", legend: false },
+  "wpn_sword_rasta": { n: "拉斯塔巴德長劍", t: "wpn", c: "武器", legend: false },
+  "wpn_taurus_axe": { n: "牛人斧頭", t: "wpn", c: "武器", legend: false },
+  "wpn_thebes_2hsword": { n: "底比斯歐西里斯雙手劍", t: "wpn", c: "武器", legend: false },
+  "wpn_thebes_bow": { n: "底比斯歐西里斯弓", t: "wpn", c: "武器", legend: false },
+  "wpn_thebes_dual": { n: "底比斯歐西里斯雙刀", t: "wpn", c: "武器", legend: false },
+  "wpn_thebes_wand": { n: "底比斯歐西里斯魔杖", t: "wpn", c: "武器", legend: false },
+  "wpn_vander_sword": { n: "騎士范德之劍", t: "wpn", c: "武器", legend: true },
+  "wpn_vengeance": { n: "復仇之劍", t: "wpn", c: "武器", legend: false },
+  "wpn_wand_rasta": { n: "拉斯塔巴德魔杖", t: "wpn", c: "武器", legend: false },
+  "wpn_witchwand": { n: "巫術魔法杖", t: "wpn", c: "武器", legend: false },
+  "wpn_xbow_abyss": { n: "暗黑十字弓", t: "wpn", c: "武器", legend: false },
+  "wpn_xbow_dark": { n: "黑暗十字弓", t: "wpn", c: "武器", legend: false },
+  "wpn_xbow_gloom": { n: "幽暗十字弓", t: "wpn", c: "武器", legend: false },
+  "wpn_xbow_heavy_rasta": { n: "拉斯塔巴德重十字弓", t: "wpn", c: "武器", legend: false },
+  "wpn_xbow_rasta": { n: "拉斯塔巴德十字弓", t: "wpn", c: "武器", legend: false },
+};
+
+const ITEM_CATEGORIES = {
+  "任務": ["quest_ring_beasttamer","quest_ring_darkdweller","quest_ring_darkmage","quest_ring_elfcaller","quest_ring_summoner"],
+  "其他": ["armguard_archer","armguard_con","armguard_dragonscale","armguard_fighter","armguard_guardian","armguard_mage","candle","mem_avatar","mem_confuse","mem_crush","mem_cube_burn","mem_cube_harmony","mem_cube_quake","mem_cube_shock","mem_endure","mem_fantasy","mem_focus","mem_golem","mem_insight","mem_lich","mem_mindbreak","mem_mirror","mem_ogre","mem_pain","mem_panic","mem_skullbreak","new_collar_beagle","new_collar_fox","new_collar_rabbit","new_collar_stbernard","new_fruit_beagle","new_fruit_fox","new_fruit_rabbit","new_fruit_stbernard","new_item_139","new_item_140","new_item_141","new_item_142","new_item_143","new_item_144","new_item_145","new_item_146","new_item_147","new_item_148","new_item_149","new_item_150","new_item_151","new_item_152","new_item_153","new_item_154","new_item_155","new_item_156","new_item_157","new_item_158","new_item_159","new_item_160","new_item_161","new_item_162","new_item_163","new_item_164","new_item_165","new_item_166","new_item_167","new_item_168","new_item_169","new_item_170","new_item_171","new_item_172","new_item_173","new_item_174","new_item_175","new_item_176","new_item_177","new_item_178","new_item_179","new_item_180","new_item_181","new_item_182","new_item_183","new_item_184","new_item_185","new_item_186","new_item_187","new_item_188","new_item_189","new_item_190","new_item_191","new_item_192","new_item_193","new_item_194","new_item_195","new_item_196","new_item_197","new_item_198","new_item_199","new_item_200","new_item_201","new_item_202","new_item_203","new_item_204","new_item_205","new_item_206","new_item_207","new_item_208","new_item_209","new_item_210","new_item_211","new_item_212","new_item_213","new_item_214","new_item_215","new_item_216","new_item_217","new_item_218","new_item_219","new_item_220","new_item_221","new_item_222","new_item_223","new_item_224","new_item_225","new_item_226","new_item_227","new_item_228","new_item_229","new_item_230","new_item_231","new_item_232","new_item_233","new_item_234","new_item_235","new_item_236","new_item_237","new_item_238","new_item_239","new_item_240","new_item_241","new_item_bless_acc","new_item_bless_arm","new_item_bless_wpn","new_item_collar_husky","new_item_elfwing","new_item_mermaid_scale","new_item_uncurse","new_phoenix_heart","pet_fang_hound","pet_fang_ruin","pet_fang_steel","pet_fang_victory","set_0","set_1","set_10","set_11","set_12","set_2","set_3","set_4","set_5","set_6","set_7","set_8","set_9","sherine_crystal","tsh_tshirt"],
+  "卷軸": ["scroll_acc","scroll_armor","scroll_armor_b","scroll_armor_c","scroll_magicbarrier","scroll_poly","scroll_revive","scroll_teleport","scroll_weapon","scroll_weapon_b","scroll_weapon_c"],
+  "戒指": ["rng_earth","rng_fire","rng_harpy","rng_mr","rng_water","rng_wind"],
+  "手套": ["glv_baranka","glv_chaos","glv_crystal","glv_death","glv_demon","glv_dk","glv_earth_spirit","glv_fallen","glv_fire_spirit","glv_glove","glv_kingassassin","glv_official","glv_priest","glv_reaper","glv_water_spirit","glv_wind_spirit"],
+  "披風": ["clk_antqueen_gold","clk_antqueen_silver","clk_blacktiger","clk_chaos","clk_dark","clk_death","clk_dragon","clk_elf","clk_fallen","clk_flame_blood","clk_illu","clk_kingnecro","clk_lich","clk_marcus","clk_mr","clk_oasis","clk_pride_earth","clk_pride_fire","clk_pride_water","clk_pride_wind","clk_priest","clk_silver_light","clk_wolf"],
+  "材料": ["mat_black_mithril","mat_blackmithril_plate","mat_blackstone2","mat_blackstone3","mat_blackstone4","mat_chaos_head","mat_chimera_dragon","mat_chimera_goat","mat_chimera_lion","mat_chimera_snake","mat_crack_core","mat_crest_assassin","mat_crest_beast","mat_crest_law","mat_crest_necro","mat_cursed_leather_earth","mat_cursed_leather_fire","mat_cursed_leather_water","mat_cursed_leather_wind","mat_death_head","mat_demon_anklet_black","mat_demon_anklet_blue","mat_demon_anklet_red","mat_demon_anklet_white","mat_earth_breath","mat_fallen_fang","mat_fallen_hand","mat_fallen_head","mat_fallen_poison","mat_fallen_scythe","mat_fallen_tongue","mat_fire_breath","mat_flame_claw","mat_flame_heart","mat_flame_sword","mat_griffon_feather","mat_legion_assassin","mat_legion_beast","mat_legion_law","mat_legion_necro","mat_osiris_basic_down","mat_osiris_basic_up","mat_osiris_high_down","mat_osiris_high_up","mat_rift_shard","mat_rough_stone","mat_silver","mat_silver_plate","mat_silverore","mat_soulstone_shard","mat_unicorn_horn","mat_unknown_axe","mat_water_breath","mat_wind_breath"],
+  "武器": ["wpn_1","wpn_10","wpn_11","wpn_12","wpn_13","wpn_14","wpn_15","wpn_16","wpn_17","wpn_18","wpn_19","wpn_2","wpn_20","wpn_21","wpn_22","wpn_23","wpn_24","wpn_25","wpn_26","wpn_27","wpn_28","wpn_29","wpn_2hsword","wpn_3","wpn_30","wpn_31","wpn_32","wpn_33","wpn_34","wpn_35","wpn_36","wpn_37","wpn_38","wpn_39","wpn_4","wpn_40","wpn_41","wpn_5","wpn_6","wpn_7","wpn_8","wpn_9","wpn_alien","wpn_ancient_axe","wpn_ancient_spear","wpn_assassin_mark","wpn_baless","wpn_baphomet_wand","wpn_baranka_claw","wpn_baranka_steelclaw","wpn_battleaxe","wpn_berserker","wpn_blackflame_sword","wpn_blood_2hsword","wpn_bow_rasta","wpn_chain_annihilator","wpn_chain_bloodthirst","wpn_chain_destroyer","wpn_chain_frost","wpn_chain_resonance","wpn_chaos_thorn","wpn_claw_abyss","wpn_claw_bronze","wpn_claw_damascus","wpn_claw_dark","wpn_claw_gloom","wpn_claw_shadow","wpn_claw_silver","wpn_claw_steel","wpn_crimson_spear","wpn_crystal_dagger","wpn_crystalwand","wpn_dagger1","wpn_dagger2","wpn_dagger_rasta","wpn_damascus","wpn_dark_sword","wpn_darkmage_wand","wpn_death_finger","wpn_demon_axe","wpn_demon_claw","wpn_demon_dual","wpn_demon_scythe","wpn_demon_sword","wpn_demon_xbow","wpn_demonking_2hsword","wpn_demonking_bow","wpn_demonking_dual","wpn_demonking_spear","wpn_demonking_wand","wpn_dk_flameblade","wpn_dragon_2h","wpn_dragonslayer","wpn_dual_abyss","wpn_dual_bronze","wpn_dual_damascus","wpn_dual_dark","wpn_dual_gloom","wpn_dual_rasta","wpn_dual_shadow","wpn_dual_silver","wpn_dual_steel","wpn_elfbow","wpn_elfsword","wpn_flaming_angel","wpn_giantaxe","wpn_greatsword","wpn_halberd","wpn_hate_claw","wpn_icequeen_wand","wpn_illu_wand","wpn_invader","wpn_katana","wpn_kurt_sword","wpn_laia_wand","wpn_longsword","wpn_mailbreaker","wpn_mana_orb","wpn_manadagger","wpn_manawand","wpn_mithril_dagger","wpn_oakwand","wpn_official_2h","wpn_old_greatsword","wpn_old_sword","wpn_old_xbow","wpn_ori_dagger","wpn_powerless_baless","wpn_powerless_baphomet","wpn_priest_wand","wpn_qigu_frost","wpn_qigu_meditate","wpn_qigu_obsidian","wpn_qigu_resonance","wpn_qigu_sapphire","wpn_rapier","wpn_red_crystalwand","wpn_redflame_bow","wpn_redflame_sword","wpn_redknight","wpn_scimitar","wpn_shaha_arrow","wpn_shaha_bow","wpn_shortbow","wpn_shortsword","wpn_silveraxe","wpn_silversword","wpn_siruge","wpn_small_katana","wpn_spear_rasta","wpn_strwand","wpn_sword_rasta","wpn_taurus_axe","wpn_thebes_2hsword","wpn_thebes_bow","wpn_thebes_dual","wpn_thebes_wand","wpn_vander_sword","wpn_vengeance","wpn_wand_rasta","wpn_witchwand","wpn_xbow_abyss","wpn_xbow_dark","wpn_xbow_gloom","wpn_xbow_heavy_rasta","wpn_xbow_rasta"],
+  "法術": ["bk_abs_barrier","bk_antidote","bk_aurora","bk_berserk","bk_blaze","bk_bless_wpn","bk_blizzard","bk_blizzard_storm","bk_break","bk_cancel","bk_charm","bk_chill","bk_cold_shiver","bk_counter_barrier","bk_dark_armorbreak","bk_dark_blind","bk_dark_burn","bk_dark_crit","bk_dark_dex","bk_dark_dodge","bk_dark_double","bk_dark_erup","bk_dark_fang","bk_dark_mrup","bk_dark_poison","bk_dark_poisonres","bk_dark_refine","bk_dark_shadow","bk_dark_stealth","bk_dark_str","bk_dark_walkhaste","bk_dex_up","bk_disease","bk_disintegrate","bk_dragon_armor","bk_dragon_awaken_antares","bk_dragon_awaken_baraka","bk_dragon_awaken_falion","bk_dragon_bloodlust","bk_dragon_deadlybody","bk_dragon_deathlightning","bk_dragon_flameslash","bk_dragon_guardbreak","bk_dragon_lavabolt","bk_dragon_lavaspit","bk_dragon_reaper","bk_dragon_slaughter","bk_dragon_terror","bk_earthquake","bk_elf_attrfire","bk_elf_blazewpn","bk_elf_dancefire","bk_elf_earthbless","bk_elf_earthguard","bk_elf_earthshield","bk_elf_eleres","bk_elf_energyboost","bk_elf_firewpn","bk_elf_flamesoul","bk_elf_groundtrap","bk_elf_lifebless","bk_elf_lifespring","bk_elf_magicerase","bk_elf_mind","bk_elf_mirror","bk_elf_mr","bk_elf_physboost","bk_elf_purify","bk_elf_release","bk_elf_seal","bk_elf_singleres","bk_elf_soul","bk_elf_steelguard","bk_elf_stormeye","bk_elf_stormshot","bk_elf_summon","bk_elf_summon2","bk_elf_triple","bk_elf_watervital","bk_elf_winddash","bk_elf_windshot","bk_elf_worldtree","bk_ench_wpn","bk_energy_sense","bk_fire_prison","bk_fire_storm","bk_firearrow","bk_fireball","bk_full_heal","bk_greater_haste","bk_haste_spell","bk_heal1","bk_heal2","bk_heal_mid","bk_hell_fang","bk_holy_barrier","bk_holy_dash","bk_holy_light","bk_holy_wpn","bk_ice_lance","bk_ice_spike","bk_icearrow","bk_invisible","bk_lightarrow","bk_load_up","bk_magic_shield","bk_mana_drain","bk_meditation","bk_meteor","bk_mummy_curse","bk_poison_curse","bk_quake","bk_reduction_armor","bk_regen","bk_resurrection","bk_reveal","bk_rock_prison","bk_seal","bk_shield","bk_shield2","bk_shock_stun","bk_sleep_mist","bk_slow","bk_solid_shield","bk_soul_up","bk_spike_armor","bk_str_up","bk_summon","bk_sunlight","bk_teleport","bk_thunder","bk_thunder_storm","bk_tornado","bk_undead_bane","bk_vampire","bk_weaken","bk_windblade","bk_zombie"],
+  "盾牌": ["shd_bone","shd_death","shd_elf","shd_gnome","shd_illu_book","shd_phantom_eye","shd_priest_book","shd_rasta","shd_redknight"],
+  "腰帶": ["blt_body","blt_dark","blt_giant_ring","blt_mr","blt_thebes_osiris","blt_titan"],
+  "萬靈藥": ["panacea_cha","panacea_con","panacea_dex","panacea_int","panacea_str","panacea_white","panacea_wis"],
+  "藥水": ["potion_blue","potion_brave","potion_haste","potion_heal","potion_strong","potion_ult"],
+  "護甲": ["arm_100","arm_101","arm_102","arm_103","arm_104","arm_105","arm_106","arm_107","arm_108","arm_109","arm_110","arm_111","arm_112","arm_113","arm_114","arm_115","arm_42","arm_43","arm_44","arm_45","arm_46","arm_47","arm_48","arm_49","arm_50","arm_51","arm_52","arm_53","arm_54","arm_55","arm_56","arm_57","arm_58","arm_59","arm_60","arm_61","arm_62","arm_63","arm_64","arm_65","arm_66","arm_67","arm_68","arm_69","arm_70","arm_71","arm_72","arm_73","arm_74","arm_75","arm_76","arm_77","arm_78","arm_79","arm_80","arm_81","arm_82","arm_83","arm_84","arm_85","arm_86","arm_87","arm_88","arm_89","arm_90","arm_91","arm_92","arm_93","arm_94","arm_95","arm_96","arm_97","arm_98","arm_99","arm_pride_medusa_shield","arm_rasta_leather","arm_shadowboots","arm_shadowglove","arm_shadowmask"],
+  "道具": ["item_ancient_book","item_ancient_scroll","item_ancientkey","item_ant_bark","item_ant_branch","item_ant_fruit","item_blueflute","item_chaos_key","item_crystal_ball","item_dantes_letter","item_death_oath","item_demon_search","item_demon_spy","item_dragon_claw","item_dragon_egg","item_elf_whisper","item_elmore_heart","item_fallen_key","item_forgotten_greatsword","item_forgotten_leather","item_forgotten_plate","item_forgotten_robe","item_forgotten_scale","item_forgotten_sword","item_forgotten_xbow","item_king_key","item_lizard_horn","item_mastery_proof","item_nightvision","item_olin_diary","item_orc_amulet","item_orc_elder_head","item_osiris_box_basic","item_osiris_box_high","item_sealed_intel","item_shadow_temple_key","item_soul_orb","item_soulfire_ash","item_spy_report","item_thebes_altar_key","item_time_orb","item_unknown_spear","item_wind_tear","item_wyvern_blood","item_yeti_head","item_yeti_heart"],
+  "鎧甲": ["amr_baphomet","amr_baranka","amr_bone","amr_centipede","amr_chaos","amr_dark_cape","amr_darkdweller","amr_darkelf","amr_darkmage_robe","amr_death","amr_demon","amr_dk","amr_fallen","amr_jacket","amr_kinglaw","amr_kurt","amr_laia_robe","amr_magerobe","amr_mambo","amr_oasis","amr_official","amr_old_leather","amr_old_plate","amr_old_robe","amr_old_scale","amr_plate","amr_priest","amr_rasta_robe","amr_robe","amr_summoner_robe"],
+  "靴子": ["bot_baless","bot_baranka","bot_dark","bot_darkdweller","bot_darkelf","bot_demon","bot_dk","bot_fallen","bot_kingbeast","bot_official","bot_priest","bot_rasta","bot_short"],
+  "項鏈": ["amu_cha","amu_int","amu_iris","amu_str"],
+  "頭盔": ["hlm_baranka","hlm_bone","hlm_chaos","hlm_dark","hlm_darkelf","hlm_demon","hlm_dk","hlm_elf","hlm_gnome","hlm_kurt","hlm_mage","hlm_mambo","hlm_mr","hlm_mummy_crown","hlm_oasis","hlm_official","hlm_priest","hlm_silver","hlm_steel","hlm_wind"],
+  "飾品": ["acc_116","acc_117","acc_118","acc_119","acc_120","acc_121","acc_122","acc_123","acc_124","acc_125","acc_126","acc_127","acc_128","acc_129","acc_130","acc_131","acc_132","acc_133","acc_134","acc_135","acc_136","acc_137","acc_138","acc_abyss_ring","acc_bear_ring","acc_darkmage_amulet","acc_demonbane","acc_doro","acc_jenis_ring","acc_laia_amulet","acc_laia_ring","acc_law_king_chain","acc_necro_king_ring","acc_summon_ctrl","acc_summoner_amulet","acc_thebes_anubis","acc_thebes_horus"],
+};
+
+const ITEM_NAME_LOOKUP = {
+  "傳送控制戒指": "acc_116",
+  "變形控制戒指": "acc_117",
+  "守護戒指": "acc_118",
+  "長者戒指": "acc_119",
+  "敏捷項鍊": "acc_120",
+  "體質項鍊": "acc_121",
+  "精神項鍊": "acc_122",
+  "妖魔戰士項鍊": "acc_123",
+  "守護項鍊": "acc_124",
+  "長老項鍊": "acc_125",
+  "抗魔項鍊": "acc_126",
+  "老舊的身體腰帶": "acc_127",
+  "老舊的精神腰帶": "acc_128",
+  "老舊的靈魂腰帶": "acc_129",
+  "精神腰帶": "acc_130",
+  "靈魂腰帶": "acc_131",
+  "多羅皮帶": "acc_132",
+  "歐吉皮帶": "acc_133",
+  "勇敢皮帶": "acc_134",
+  "光明身體腰帶": "acc_135",
+  "光明精神腰帶": "acc_136",
+  "光明靈魂腰帶": "acc_137",
+  "守護皮帶": "acc_138",
+  "深淵戒指": "acc_abyss_ring",
+  "熊戒指": "acc_bear_ring",
+  "黑法師項鍊": "acc_darkmage_amulet",
+  "滅魔戒指": "acc_demonbane",
+  "多羅戒指": "acc_doro",
+  "潔尼斯戒指": "acc_jenis_ring",
+  "蕾雅項鍊": "acc_laia_amulet",
+  "蕾雅戒指": "acc_laia_ring",
+  "法令軍王之鍊": "acc_law_king_chain",
+  "冥法軍王之戒": "acc_necro_king_ring",
+  "召喚控制戒指": "acc_summon_ctrl",
+  "喚獸師項鍊": "acc_summoner_amulet",
+  "底比斯阿努比斯戒指": "acc_thebes_anubis",
+  "底比斯賀洛斯戒指": "acc_thebes_horus",
+  "巴風特盔甲": "amr_baphomet",
+  "巴蘭卡盔甲": "amr_baranka",
+  "骷髏盔甲": "amr_bone",
+  "金屬蜈蚣皮盔甲": "amr_centipede",
+  "混沌法袍": "amr_chaos",
+  "黑暗披肩": "amr_dark_cape",
+  "黑暗棲林者盔甲": "amr_darkdweller",
+  "黑暗妖精鱗甲": "amr_darkelf",
+  "黑法師長袍": "amr_darkmage_robe",
+  "死亡盔甲": "amr_death",
+  "惡魔盔甲": "amr_demon",
+  "死亡騎士盔甲": "amr_dk",
+  "墮落長袍": "amr_fallen",
+  "皮夾克": "amr_jacket",
+  "法令軍王長袍": "amr_kinglaw",
+  "克特盔甲": "amr_kurt",
+  "蕾雅長袍": "amr_laia_robe",
+  "法師長袍": "amr_magerobe",
+  "曼波外套": "amr_mambo",
+  "歐西斯環甲": "amr_oasis",
+  "武官護鎧": "amr_official",
+  "古老的皮盔甲": "amr_old_leather",
+  "古老的金屬盔甲": "amr_old_plate",
+  "古老的長袍": "amr_old_robe",
+  "古老的鱗甲": "amr_old_scale",
+  "金屬盔甲": "amr_plate",
+  "神官法袍": "amr_priest",
+  "拉斯塔巴德長袍": "amr_rasta_robe",
+  "綿質長袍": "amr_robe",
+  "喚獸師長袍": "amr_summoner_robe",
+  "魅力項鍊": "amu_cha",
+  "智力項鍊": "amu_int",
+  "艾莉絲項鍊": "amu_iris",
+  "力量項鍊": "amu_str",
+  "鋼鐵手套": "arm_100",
+  "克特手套": "arm_101",
+  "保護者手套": "arm_102",
+  "小盾牌": "arm_103",
+  "阿克海盾牌": "arm_104",
+  "大盾牌": "arm_105",
+  "反射之盾": "arm_106",
+  "伊娃之盾": "arm_107",
+  "塔盾": "arm_108",
+  "木盾": "arm_109",
+  "銀騎士之盾": "arm_110",
+  "皮盾牌": "arm_111",
+  "銀釘皮盾": "arm_112",
+  "鋼鐵盾牌": "arm_113",
+  "受詛咒的魔法書": "arm_114",
+  "魔法能量之書": "arm_115",
+  "頭盔": "arm_42",
+  "騎士面甲": "arm_43",
+  "艾爾穆的祝福": "arm_44",
+  "治癒魔法頭盔": "arm_45",
+  "敏捷魔法頭盔": "arm_46",
+  "力量魔法頭盔": "arm_47",
+  "皮帽子": "arm_48",
+  "皮頭盔": "arm_49",
+  "精靈敏捷頭盔": "arm_50",
+  "精靈體質頭盔": "arm_51",
+  "騎士頭巾": "arm_52",
+  "紅騎士頭巾": "arm_53",
+  "巴土瑟之帽": "arm_54",
+  "卡士柏之帽": "arm_55",
+  "馬庫爾之帽": "arm_56",
+  "西瑪之帽": "arm_57",
+  "淨化頭飾": "arm_58",
+  "水晶盔甲": "arm_59",
+  "青銅盔甲": "arm_60",
+  "藤甲": "arm_61",
+  "皮甲": "arm_62",
+  "鏈甲": "arm_63",
+  "歐西斯鏈甲": "arm_64",
+  "鱗甲": "arm_65",
+  "銀釘皮甲": "arm_66",
+  "環甲": "arm_67",
+  "小藤甲": "arm_68",
+  "抗魔法鏈甲": "arm_69",
+  "木甲": "arm_70",
+  "精靈護胸金屬板": "arm_71",
+  "精靈金屬盔甲": "arm_72",
+  "精靈鏈甲": "arm_73",
+  "木製的夾克": "arm_74",
+  "皮背心": "arm_75",
+  "皮盔甲": "arm_76",
+  "銀釘皮背心": "arm_77",
+  "硬皮背心": "arm_78",
+  "鋼鐵金屬盔甲": "arm_79",
+  "水龍鱗盔甲": "arm_80",
+  "地龍鱗盔甲": "arm_81",
+  "火龍鱗盔甲": "arm_82",
+  "風龍鱗盔甲": "arm_83",
+  "黑長者長袍": "arm_84",
+  "精靈T恤": "arm_85",
+  "侏儒斗篷": "arm_86",
+  "保護者斗篷": "arm_87",
+  "隱身斗篷": "arm_88",
+  "瑪那斗篷": "arm_89",
+  "長靴": "arm_90",
+  "皮涼鞋": "arm_91",
+  "銀釘皮涼鞋": "arm_92",
+  "皮長靴": "arm_93",
+  "鋼鐵長靴": "arm_94",
+  "深水長靴": "arm_95",
+  "黑長者涼鞋": "arm_96",
+  "克特長靴": "arm_97",
+  "腕甲": "arm_98",
+  "力量手套": "arm_99",
+  "梅杜莎盾牌": "arm_pride_medusa_shield",
+  "拉斯塔巴德皮盔甲": "arm_rasta_leather",
+  "影子長靴": "arm_shadowboots",
+  "影子手套": "arm_shadowglove",
+  "影子面具": "arm_shadowmask",
+  "古代神射臂甲": "armguard_archer",
+  "體力臂甲": "armguard_con",
+  "龍鱗臂甲": "armguard_dragonscale",
+  "古代鬥士臂甲": "armguard_fighter",
+  "守護者臂甲": "armguard_guardian",
+  "法師臂甲": "armguard_mage",
+  "魔法書(絕對屏障)": "bk_abs_barrier",
+  "魔法書(解毒術)": "bk_antidote",
+  "魔法書(極光雷電)": "bk_aurora",
+  "魔法書(狂暴術)": "bk_berserk",
+  "魔法書(烈炎術)": "bk_blaze",
+  "魔法書(祝福魔法武器)": "bk_bless_wpn",
+  "魔法書(冰雪暴)": "bk_blizzard",
+  "魔法書(冰雪颶風)": "bk_blizzard_storm",
+  "魔法書(壞物術)": "bk_break",
+  "魔法書(魔法相消術)": "bk_cancel",
+  "魔法書(迷魅術)": "bk_charm",
+  "魔法書(寒冰氣息)": "bk_chill",
+  "魔法書(寒冷戰慄)": "bk_cold_shiver",
+  "技術書(反擊屏障)": "bk_counter_barrier",
+  "黑暗精靈水晶(破壞盔甲)": "bk_dark_armorbreak",
+  "魔法書(闇盲咒術)": "bk_dark_blind",
+  "黑暗精靈水晶(燃燒鬥志)": "bk_dark_burn",
+  "黑暗精靈水晶(會心一擊)": "bk_dark_crit",
+  "黑暗精靈水晶(敏捷提升)": "bk_dark_dex",
+  "黑暗精靈水晶(暗影閃避)": "bk_dark_dodge",
+  "黑暗精靈水晶(雙重破壞)": "bk_dark_double",
+  "黑暗精靈水晶(迴避提升)": "bk_dark_erup",
+  "黑暗精靈水晶(暗影之牙)": "bk_dark_fang",
+  "黑暗精靈水晶(影之防護)": "bk_dark_mrup",
+  "黑暗精靈水晶(附加劇毒)": "bk_dark_poison",
+  "黑暗精靈水晶(毒性抵抗)": "bk_dark_poisonres",
+  "黑暗精靈水晶(提煉魔石)": "bk_dark_refine",
+  "魔法書(黑闇之影)": "bk_dark_shadow",
+  "黑暗精靈水晶(暗隱術)": "bk_dark_stealth",
+  "黑暗精靈水晶(力量提升)": "bk_dark_str",
+  "黑暗精靈水晶(行走加速)": "bk_dark_walkhaste",
+  "魔法書(通暢氣脈術)": "bk_dex_up",
+  "魔法書(疾病術)": "bk_disease",
+  "魔法書(究極光裂術)": "bk_disintegrate",
+  "龍騎士書板(龍之護鎧)": "bk_dragon_armor",
+  "龍騎士書板(覺醒：安塔瑞斯)": "bk_dragon_awaken_antares",
+  "龍騎士書板(覺醒：巴拉卡斯)": "bk_dragon_awaken_baraka",
+  "龍騎士書板(覺醒：法利昂)": "bk_dragon_awaken_falion",
+  "龍騎士書板(血之渴望)": "bk_dragon_bloodlust",
+  "龍騎士書板(致命身軀)": "bk_dragon_deadlybody",
+  "龍騎士書板(奪命之雷)": "bk_dragon_deathlightning",
+  "龍騎士書板(燃燒擊砍)": "bk_dragon_flameslash",
+  "龍騎士書板(護衛毀滅)": "bk_dragon_guardbreak",
+  "龍騎士書板(岩漿之箭)": "bk_dragon_lavabolt",
+  "龍騎士書板(岩漿噴吐)": "bk_dragon_lavaspit",
+  "龍騎士書板(驚悚死神)": "bk_dragon_reaper",
+  "龍騎士書板(屠宰者)": "bk_dragon_slaughter",
+  "龍騎士書板(恐懼無助)": "bk_dragon_terror",
+  "魔法書(地裂術)": "bk_earthquake",
+  "精靈水晶(屬性之火)": "bk_elf_attrfire",
+  "精靈水晶(烈炎武器)": "bk_elf_blazewpn",
+  "精靈水晶(舞躍之火)": "bk_elf_dancefire",
+  "精靈水晶(大地的祝福)": "bk_elf_earthbless",
+  "精靈水晶(大地防護)": "bk_elf_earthguard",
+  "精靈水晶(大地屏障)": "bk_elf_earthshield",
+  "精靈水晶(屬性防禦)": "bk_elf_eleres",
+  "精靈水晶(能量激發)": "bk_elf_energyboost",
+  "精靈水晶(火焰武器)": "bk_elf_firewpn",
+  "精靈水晶(烈焰之魂)": "bk_elf_flamesoul",
+  "精靈水晶(地面障礙)": "bk_elf_groundtrap",
+  "精靈水晶(生命的祝福)": "bk_elf_lifebless",
+  "精靈水晶(生命之泉)": "bk_elf_lifespring",
+  "精靈水晶(魔法消除)": "bk_elf_magicerase",
+  "精靈水晶(心靈轉換)": "bk_elf_mind",
+  "精靈水晶(鏡反射)": "bk_elf_mirror",
+  "精靈水晶(魔法防禦)": "bk_elf_mr",
+  "精靈水晶(體能激發)": "bk_elf_physboost",
+  "精靈水晶(淨化精神)": "bk_elf_purify",
+  "精靈水晶(釋放元素)": "bk_elf_release",
+  "精靈水晶(封印禁地)": "bk_elf_seal",
+  "精靈水晶(單屬性防禦)": "bk_elf_singleres",
+  "精靈水晶(魂體轉換)": "bk_elf_soul",
+  "精靈水晶(鋼鐵防護)": "bk_elf_steelguard",
+  "精靈水晶(暴風之眼)": "bk_elf_stormeye",
+  "精靈水晶(暴風神射)": "bk_elf_stormshot",
+  "精靈水晶(召喚屬性精靈)": "bk_elf_summon",
+  "精靈水晶(召喚強力屬性精靈)": "bk_elf_summon2",
+  "精靈水晶(三重矢)": "bk_elf_triple",
+  "精靈水晶(水之元氣)": "bk_elf_watervital",
+  "精靈水晶(風之疾走)": "bk_elf_winddash",
+  "精靈水晶(風之神射)": "bk_elf_windshot",
+  "精靈水晶(世界樹的呼喚)": "bk_elf_worldtree",
+  "魔法書(擬似魔法武器)": "bk_ench_wpn",
+  "魔法書(能量感測)": "bk_energy_sense",
+  "魔法書(火牢)": "bk_fire_prison",
+  "魔法書(火風暴)": "bk_fire_storm",
+  "魔法書(火箭)": "bk_firearrow",
+  "魔法書(燃燒的火球)": "bk_fireball",
+  "魔法書(全部治癒術)": "bk_full_heal",
+  "魔法書(強力加速術)": "bk_greater_haste",
+  "魔法書(加速術)": "bk_haste_spell",
+  "魔法書(初級治癒術)": "bk_heal1",
+  "魔法書(高級治癒術)": "bk_heal2",
+  "魔法書(中級治癒術)": "bk_heal_mid",
+  "魔法書(地獄之牙)": "bk_hell_fang",
+  "魔法書(聖結界)": "bk_holy_barrier",
+  "魔法書(神聖疾走)": "bk_holy_dash",
+  "魔法書(聖潔之光)": "bk_holy_light",
+  "魔法書(神聖武器)": "bk_holy_wpn",
+  "魔法書(冰矛圍籬)": "bk_ice_lance",
+  "魔法書(冰錐)": "bk_ice_spike",
+  "魔法書(冰箭)": "bk_icearrow",
+  "魔法書(隱身術)": "bk_invisible",
+  "魔法書(光箭)": "bk_lightarrow",
+  "魔法書(負重強化)": "bk_load_up",
+  "魔法書(魔法屏障)": "bk_magic_shield",
+  "魔法書(魔力奪取)": "bk_mana_drain",
+  "魔法書(冥想術)": "bk_meditation",
+  "魔法書(流星雨)": "bk_meteor",
+  "魔法書(木乃伊的詛咒)": "bk_mummy_curse",
+  "魔法書(毒咒)": "bk_poison_curse",
+  "魔法書(震裂術)": "bk_quake",
+  "技術書(增幅防禦)": "bk_reduction_armor",
+  "魔法書(體力回復術)": "bk_regen",
+  "魔法書(返生術)": "bk_resurrection",
+  "魔法書(無所遁形術)": "bk_reveal",
+  "魔法書(岩牢)": "bk_rock_prison",
+  "魔法書(魔法封印)": "bk_seal",
+  "魔法書(保護罩)": "bk_shield",
+  "魔法書(鎧甲護持)": "bk_shield2",
+  "技術書(衝擊之暈)": "bk_shock_stun",
+  "魔法書(沉睡之霧)": "bk_sleep_mist",
+  "魔法書(緩速術)": "bk_slow",
+  "技術書(堅固防護)": "bk_solid_shield",
+  "魔法書(靈魂昇華)": "bk_soul_up",
+  "技術書(尖刺盔甲)": "bk_spike_armor",
+  "魔法書(體魄強健術)": "bk_str_up",
+  "魔法書(召喚術)": "bk_summon",
+  "魔法書(日光術)": "bk_sunlight",
+  "魔法書(指定傳送)": "bk_teleport",
+  "魔法書(極道落雷)": "bk_thunder",
+  "魔法書(雷霆風暴)": "bk_thunder_storm",
+  "魔法書(龍捲風)": "bk_tornado",
+  "魔法書(起死回生術)": "bk_undead_bane",
+  "魔法書(吸血鬼之吻)": "bk_vampire",
+  "魔法書(弱化術)": "bk_weaken",
+  "魔法書(風刃)": "bk_windblade",
+  "魔法書(造屍術)": "bk_zombie",
+  "身體腰帶": "blt_body",
+  "黑暗腰帶": "blt_dark",
+  "古代巨人戒指": "blt_giant_ring",
+  "抗魔皮帶": "blt_mr",
+  "底比斯歐西里斯腰帶": "blt_thebes_osiris",
+  "泰坦皮帶": "blt_titan",
+  "巴列斯長靴": "bot_baless",
+  "巴蘭卡長靴": "bot_baranka",
+  "黑暗長靴": "bot_dark",
+  "黑暗棲林者長靴": "bot_darkdweller",
+  "黑暗妖精涼鞋": "bot_darkelf",
+  "惡魔長靴": "bot_demon",
+  "死亡騎士長靴": "bot_dk",
+  "墮落長靴": "bot_fallen",
+  "魔獸軍王長靴": "bot_kingbeast",
+  "武官長靴": "bot_official",
+  "神官長靴": "bot_priest",
+  "拉斯塔巴德長靴": "bot_rasta",
+  "短統靴": "bot_short",
+  "回憶蠟燭": "candle",
+  "巨蟻女皇的金翅膀": "clk_antqueen_gold",
+  "巨蟻女皇的銀翅膀": "clk_antqueen_silver",
+  "黑虎皮斗篷": "clk_blacktiger",
+  "混沌斗篷": "clk_chaos",
+  "黑暗斗篷": "clk_dark",
+  "死亡斗篷": "clk_death",
+  "龍騎士斗篷": "clk_dragon",
+  "精靈斗篷": "clk_elf",
+  "墮落斗篷": "clk_fallen",
+  "炎魔的血光斗篷": "clk_flame_blood",
+  "幻術士斗篷": "clk_illu",
+  "冥法軍王斗篷": "clk_kingnecro",
+  "巫妖斗篷": "clk_lich",
+  "馬昆斯斗篷": "clk_marcus",
+  "抗魔法斗篷": "clk_mr",
+  "歐西斯斗篷": "clk_oasis",
+  "地屬性斗篷": "clk_pride_earth",
+  "火屬性斗篷": "clk_pride_fire",
+  "水屬性斗篷": "clk_pride_water",
+  "風屬性斗篷": "clk_pride_wind",
+  "神官斗篷": "clk_priest",
+  "銀光斗篷": "clk_silver_light",
+  "狼皮斗篷": "clk_wolf",
+  "巴蘭卡手套": "glv_baranka",
+  "混沌手套": "glv_chaos",
+  "水晶手套": "glv_crystal",
+  "死亡手套": "glv_death",
+  "惡魔手套": "glv_demon",
+  "死亡騎士手套": "glv_dk",
+  "地靈手套": "glv_earth_spirit",
+  "墮落手套": "glv_fallen",
+  "火靈手套": "glv_fire_spirit",
+  "手套": "glv_glove",
+  "暗殺軍王手套": "glv_kingassassin",
+  "武官手套": "glv_official",
+  "神官手套": "glv_priest",
+  "死神之手": "glv_reaper",
+  "水靈手套": "glv_water_spirit",
+  "風靈手套": "glv_wind_spirit",
+  "巴蘭卡頭盔": "hlm_baranka",
+  "骷髏頭盔": "hlm_bone",
+  "混沌頭盔": "hlm_chaos",
+  "黑暗頭飾": "hlm_dark",
+  "黑暗妖精頭箍": "hlm_darkelf",
+  "惡魔頭盔": "hlm_demon",
+  "死亡騎士頭盔": "hlm_dk",
+  "精靈皮盔": "hlm_elf",
+  "侏儒鐵盔": "hlm_gnome",
+  "克特頭盔": "hlm_kurt",
+  "法師之帽": "hlm_mage",
+  "曼波帽子": "hlm_mambo",
+  "抗魔法頭盔": "hlm_mr",
+  "木乃伊王的王冠": "hlm_mummy_crown",
+  "歐西斯頭盔": "hlm_oasis",
+  "武官頭盔": "hlm_official",
+  "神官頭飾": "hlm_priest",
+  "銀釘皮帽": "hlm_silver",
+  "鋼鐵頭盔": "hlm_steel",
+  "風之頭盔": "hlm_wind",
+  "古代黑妖之秘笈": "item_ancient_book",
+  "古代的卷軸": "item_ancient_scroll",
+  "古代鑰匙": "item_ancientkey",
+  "污濁安特的樹皮": "item_ant_bark",
+  "污濁安特的樹枝": "item_ant_branch",
+  "污濁安特的水果": "item_ant_fruit",
+  "藍色長笛": "item_blueflute",
+  "混沌鑰匙": "item_chaos_key",
+  "水晶球": "item_crystal_ball",
+  "丹特斯的召書": "item_dantes_letter",
+  "死亡誓約": "item_death_oath",
+  "妖魔搜索文件": "item_demon_search",
+  "妖魔密使首領間諜書": "item_demon_spy",
+  "飛龍的爪子": "item_dragon_claw",
+  "幼龍蛋": "item_dragon_egg",
+  "精靈的私語": "item_elf_whisper",
+  "艾爾摩將軍之心": "item_elmore_heart",
+  "墮落鑰匙": "item_fallen_key",
+  "受封印 被遺忘的巨劍": "item_forgotten_greatsword",
+  "被遺忘的皮盔甲": "item_forgotten_leather",
+  "被遺忘的金屬盔甲": "item_forgotten_plate",
+  "被遺忘的長袍": "item_forgotten_robe",
+  "被遺忘的鱗甲": "item_forgotten_scale",
+  "受封印 被遺忘的劍": "item_forgotten_sword",
+  "受封印 被遺忘的弩槍": "item_forgotten_xbow",
+  "軍王的鑰匙": "item_king_key",
+  "蜥蜴的角": "item_lizard_horn",
+  "精通之證": "item_mastery_proof",
+  "夜之視野": "item_nightvision",
+  "歐林的日記本": "item_olin_diary",
+  "妖魔戰士護身符": "item_orc_amulet",
+  "妖魔長老首級": "item_orc_elder_head",
+  "上鎖的歐西里斯初級寶箱": "item_osiris_box_basic",
+  "上鎖的歐西里斯高級寶箱": "item_osiris_box_high",
+  "密封的情報書": "item_sealed_intel",
+  "暗影神殿鑰匙": "item_shadow_temple_key",
+  "靈魂之球": "item_soul_orb",
+  "靈魂之火灰燼": "item_soulfire_ash",
+  "間諜報告書": "item_spy_report",
+  "底比斯歐西里斯祭壇鑰匙": "item_thebes_altar_key",
+  "完成的時間水晶球": "item_time_orb",
+  "不為人知的矛": "item_unknown_spear",
+  "風之淚": "item_wind_tear",
+  "翼龍之血": "item_wyvern_blood",
+  "雪怪首級": "item_yeti_head",
+  "雪怪之心": "item_yeti_heart",
+  "黑色米索莉": "mat_black_mithril",
+  "黑色米索莉金屬板": "mat_blackmithril_plate",
+  "二級黑魔石": "mat_blackstone2",
+  "三級黑魔石": "mat_blackstone3",
+  "四級黑魔石": "mat_blackstone4",
+  "混沌首級": "mat_chaos_head",
+  "奇美拉之皮(龍)": "mat_chimera_dragon",
+  "奇美拉之皮(山羊)": "mat_chimera_goat",
+  "奇美拉之皮(獅子)": "mat_chimera_lion",
+  "奇美拉之皮(蛇)": "mat_chimera_snake",
+  "龜裂之核": "mat_crack_core",
+  "暗殺軍王徽印": "mat_crest_assassin",
+  "魔獸軍王徽印": "mat_crest_beast",
+  "法令軍王徽印": "mat_crest_law",
+  "冥法軍王徽印": "mat_crest_necro",
+  "詛咒的皮革(地)": "mat_cursed_leather_earth",
+  "詛咒的皮革(火)": "mat_cursed_leather_fire",
+  "詛咒的皮革(水)": "mat_cursed_leather_water",
+  "詛咒的皮革(風)": "mat_cursed_leather_wind",
+  "死亡首級": "mat_death_head",
+  "惡魔的黑色腳鐐": "mat_demon_anklet_black",
+  "惡魔的藍色腳鐐": "mat_demon_anklet_blue",
+  "惡魔的紅色腳鐐": "mat_demon_anklet_red",
+  "惡魔的白色腳鐐": "mat_demon_anklet_white",
+  "土之氣息": "mat_earth_breath",
+  "墮落之牙": "mat_fallen_fang",
+  "墮落之手": "mat_fallen_hand",
+  "墮落首級": "mat_fallen_head",
+  "墮落之毒": "mat_fallen_poison",
+  "墮落鐮刀": "mat_fallen_scythe",
+  "墮落之舌": "mat_fallen_tongue",
+  "火之氣息": "mat_fire_breath",
+  "炎魔之爪": "mat_flame_claw",
+  "炎魔之心": "mat_flame_heart",
+  "炎魔之劍": "mat_flame_sword",
+  "格利芬羽毛": "mat_griffon_feather",
+  "暗殺軍團印記": "mat_legion_assassin",
+  "魔獸軍團印記": "mat_legion_beast",
+  "法令軍團印記": "mat_legion_law",
+  "冥法軍團印記": "mat_legion_necro",
+  "歐西里斯初級寶箱碎片(下)": "mat_osiris_basic_down",
+  "歐西里斯初級寶箱碎片(上)": "mat_osiris_basic_up",
+  "歐西里斯高級寶箱碎片(下)": "mat_osiris_high_down",
+  "歐西里斯高級寶箱碎片(上)": "mat_osiris_high_up",
+  "時空裂痕碎片": "mat_rift_shard",
+  "原石碎片": "mat_rough_stone",
+  "銀": "mat_silver",
+  "銀金屬板": "mat_silver_plate",
+  "銀礦石": "mat_silverore",
+  "靈魂石碎片": "mat_soulstone_shard",
+  "神聖獨角獸之角": "mat_unicorn_horn",
+  "不為人知的斧": "mat_unknown_axe",
+  "水之氣息": "mat_water_breath",
+  "風之氣息": "mat_wind_breath",
+  "記憶水晶(幻覺：化身)": "mem_avatar",
+  "記憶水晶(混亂)": "mem_confuse",
+  "記憶水晶(粉碎能量)": "mem_crush",
+  "記憶水晶(立方：燃燒)": "mem_cube_burn",
+  "記憶水晶(立方：和諧)": "mem_cube_harmony",
+  "記憶水晶(立方：地裂)": "mem_cube_quake",
+  "記憶水晶(立方：衝擊)": "mem_cube_shock",
+  "記憶水晶(耐力)": "mem_endure",
+  "記憶水晶(幻想)": "mem_fantasy",
+  "記憶水晶(專注)": "mem_focus",
+  "記憶水晶(幻覺：鑽石高崙)": "mem_golem",
+  "記憶水晶(洞察)": "mem_insight",
+  "記憶水晶(幻覺：巫妖)": "mem_lich",
+  "記憶水晶(心靈破壞)": "mem_mindbreak",
+  "記憶水晶(鏡像)": "mem_mirror",
+  "記憶水晶(幻覺：歐吉)": "mem_ogre",
+  "記憶水晶(疼痛的歡愉)": "mem_pain",
+  "記憶水晶(恐慌)": "mem_panic",
+  "記憶水晶(骷髏毀壞)": "mem_skullbreak",
+  "項圈 (小獵犬)": "new_collar_beagle",
+  "項圈 (狐狸)": "new_collar_fox",
+  "項圈(暴走兔)": "new_collar_rabbit",
+  "項圈(聖伯納)": "new_collar_stbernard",
+  "進化果實：小獵犬": "new_fruit_beagle",
+  "進化果實：狐狸": "new_fruit_fox",
+  "進化果實：暴走兔": "new_fruit_rabbit",
+  "進化果實：聖伯納": "new_fruit_stbernard",
+  "精靈餅乾": "new_item_139",
+  "慎重藥水": "new_item_140",
+  "安特的水果": "new_item_141",
+  "哨子": "new_item_142",
+  "肉": "new_item_143",
+  "夏洛伯之爪": "new_item_144",
+  "阿吐巴圖騰": "new_item_145",
+  "那魯加圖騰": "new_item_146",
+  "都達瑪拉圖騰": "new_item_147",
+  "甘地圖騰": "new_item_148",
+  "羅孚圖騰": "new_item_149",
+  "魔法寶石": "new_item_150",
+  "鑽石": "new_item_151",
+  "品質鑽石": "new_item_152",
+  "高品質鑽石": "new_item_153",
+  "綠寶石": "new_item_154",
+  "品質綠寶石": "new_item_155",
+  "高品質綠寶石": "new_item_156",
+  "紅寶石": "new_item_157",
+  "品質紅寶石": "new_item_158",
+  "高品質紅寶石": "new_item_159",
+  "藍寶石": "new_item_160",
+  "品質藍寶石": "new_item_161",
+  "高品質藍寶石": "new_item_162",
+  "潘的鬃毛": "new_item_163",
+  "粗糙的米索莉塊": "new_item_164",
+  "元素石": "new_item_165",
+  "蘑菇汁": "new_item_166",
+  "食人巨魔的血": "new_item_167",
+  "線": "new_item_168",
+  "純粹的米索莉塊": "new_item_169",
+  "精靈粉末": "new_item_170",
+  "芮克妮的網": "new_item_171",
+  "安特的樹皮": "new_item_172",
+  "奧里哈魯根": "new_item_173",
+  "米索莉線": "new_item_174",
+  "芮克妮的蛻皮": "new_item_175",
+  "魔法笛子": "new_item_176",
+  "米索莉金屬板": "new_item_177",
+  "奧里哈魯根金屬板": "new_item_178",
+  "皮革": "new_item_179",
+  "金屬塊": "new_item_180",
+  "皮帶": "new_item_181",
+  "高級皮革": "new_item_182",
+  "骨頭碎片": "new_item_183",
+  "項圈 (杜賓狗)": "new_item_184",
+  "項圈 (狼)": "new_item_185",
+  "糖果": "new_item_186",
+  "藍色布料": "new_item_187",
+  "紅色布料": "new_item_188",
+  "白色布料": "new_item_189",
+  "水龍鱗": "new_item_190",
+  "地龍鱗": "new_item_191",
+  "火龍鱗": "new_item_192",
+  "風龍鱗": "new_item_193",
+  "阿西塔基奧的灰燼": "new_item_194",
+  "精靈玉": "new_item_195",
+  "古老的交易文件": "new_item_196",
+  "搜索狀": "new_item_197",
+  "黑騎士的誓約": "new_item_198",
+  "都達瑪拉妖魔魔法書": "new_item_199",
+  "那魯加妖魔魔法書": "new_item_200",
+  "甘地妖魔魔法書": "new_item_201",
+  "阿吐巴妖魔魔法書": "new_item_202",
+  "骷髏頭": "new_item_203",
+  "食屍鬼的指甲": "new_item_204",
+  "食屍鬼的牙齒": "new_item_205",
+  "龍龜甲": "new_item_206",
+  "生命的卷軸": "new_item_207",
+  "蛇女之鱗": "new_item_208",
+  "返生藥水": "new_item_209",
+  "感謝信": "new_item_210",
+  "村民的遺物": "new_item_211",
+  "不死族的骨頭": "new_item_212",
+  "受詛咒的精靈書": "new_item_213",
+  "不死族的鑰匙": "new_item_214",
+  "殭屍鑰匙": "new_item_215",
+  "骷髏鑰匙": "new_item_216",
+  "密室鑰匙": "new_item_217",
+  "神秘水晶球": "new_item_218",
+  "神秘魔杖": "new_item_219",
+  "蛇女房間鑰匙": "new_item_220",
+  "光明的鱗片": "new_item_221",
+  "畢克斯的羽毛": "new_item_222",
+  "畢克斯的沙漏": "new_item_223",
+  "贖罪聖書": "new_item_224",
+  "被偷的項鍊": "new_item_225",
+  "被偷的戒指": "new_item_226",
+  "獨眼巨人的血": "new_item_227",
+  "污染的精靈水晶(水)": "new_item_228",
+  "污染的精靈水晶(火)": "new_item_229",
+  "污染的精靈水晶(地)": "new_item_230",
+  "污染的精靈水晶(風)": "new_item_231",
+  "邪惡蜥蜴之鱗": "new_item_232",
+  "神秘魔力恢復藥水": "new_item_233",
+  "神秘慎重藥水": "new_item_234",
+  "思克巴女皇的神祕魔杖": "new_item_235",
+  "說話之島的回憶": "new_item_236",
+  "安特的樹枝": "new_item_237",
+  "項圈 (牧羊犬)": "new_item_238",
+  "潘朵拉抽獎卷": "new_item_239",
+  "變形怪的血": "new_item_240",
+  "王族搜索狀": "new_item_241",
+  "賦予飾品祝福卷軸": "new_item_bless_acc",
+  "賦予盔甲祝福卷軸": "new_item_bless_arm",
+  "賦予武器祝福卷軸": "new_item_bless_wpn",
+  "項圈 (哈士奇)": "new_item_collar_husky",
+  "精靈羽翼": "new_item_elfwing",
+  "人魚之鱗": "new_item_mermaid_scale",
+  "解除詛咒的卷軸": "new_item_uncurse",
+  "不死鳥之心": "new_phoenix_heart",
+  "萬能藥(CHA)": "panacea_cha",
+  "萬能藥(CON)": "panacea_con",
+  "萬能藥(DEX)": "panacea_dex",
+  "萬能藥(INT)": "panacea_int",
+  "萬能藥(STR)": "panacea_str",
+  "純白的萬能藥": "panacea_white",
+  "萬能藥(WIS)": "panacea_wis",
+  "獵犬之牙": "pet_fang_hound",
+  "破滅之牙": "pet_fang_ruin",
+  "鋼鐵之牙": "pet_fang_steel",
+  "勝利之牙": "pet_fang_victory",
+  "藍色藥水": "potion_blue",
+  "勇敢藥水": "potion_brave",
+  "自我加速藥水": "potion_haste",
+  "紅色藥水": "potion_heal",
+  "橙色藥水": "potion_strong",
+  "白色藥水": "potion_ult",
+  "馴獸師戒指": "quest_ring_beasttamer",
+  "黑暗棲林者戒指": "quest_ring_darkdweller",
+  "黑法師戒指": "quest_ring_darkmage",
+  "精靈使戒指": "quest_ring_elfcaller",
+  "喚獸師戒指": "quest_ring_summoner",
+  "地靈戒指": "rng_earth",
+  "火靈戒指": "rng_fire",
+  "哈維戒指": "rng_harpy",
+  "抗魔戒指": "rng_mr",
+  "水靈戒指": "rng_water",
+  "風靈戒指": "rng_wind",
+  "對飾品施法的卷軸": "scroll_acc",
+  "對盔甲施法的卷軸": "scroll_armor",
+  "祝福的 對盔甲施法的卷軸": "scroll_armor_b",
+  "詛咒的 對盔甲施法的卷軸": "scroll_armor_c",
+  "魔法卷軸(魔法屏障)": "scroll_magicbarrier",
+  "變形卷軸": "scroll_poly",
+  "復活卷軸": "scroll_revive",
+  "瞬間移動卷軸": "scroll_teleport",
+  "對武器施法的卷軸": "scroll_weapon",
+  "祝福的 對武器施法的卷軸": "scroll_weapon_b",
+  "詛咒的 對武器施法的卷軸": "scroll_weapon_c",
+  "皮套裝": "set_0",
+  "歐西斯套裝": "set_1",
+  "守護套裝": "set_10",
+  "四大軍王套裝": "set_11",
+  "惡魔套裝": "set_12",
+  "侏儒套裝": "set_2",
+  "銀釘套裝": "set_3",
+  "骷髏套裝": "set_4",
+  "鋼鐵套裝": "set_5",
+  "法師套裝": "set_6",
+  "死亡騎士套裝": "set_7",
+  "克特套裝": "set_8",
+  "抗魔套裝": "set_9",
+  "骷髏盾牌": "shd_bone",
+  "死亡之盾": "shd_death",
+  "精靈盾牌": "shd_elf",
+  "侏儒圓盾": "shd_gnome",
+  "幻術士法書": "shd_illu_book",
+  "幻象眼魔的心眼": "shd_phantom_eye",
+  "神官魔法書": "shd_priest_book",
+  "拉斯塔巴德圓盾": "shd_rasta",
+  "紅騎士盾牌": "shd_redknight",
+  "席琳結晶": "sherine_crystal",
+  "T恤": "tsh_tshirt",
+  "斧": "wpn_1",
+  "木棒": "wpn_10",
+  "匕首": "wpn_11",
+  "貝卡合金": "wpn_12",
+  "弗萊爾": "wpn_13",
+  "闊矛": "wpn_14",
+  "吉薩": "wpn_15",
+  "戟": "wpn_16",
+  "槍": "wpn_17",
+  "露西錘": "wpn_18",
+  "戰錘": "wpn_19",
+  "釘錘": "wpn_2",
+  "流星錘": "wpn_20",
+  "帕提森": "wpn_21",
+  "銀箭": "wpn_22",
+  "侏儒鐵斧": "wpn_23",
+  "精靈之矛": "wpn_24",
+  "歐西斯之矛": "wpn_25",
+  "小侏儒短劍": "wpn_26",
+  "歐西斯短劍": "wpn_27",
+  "三叉戟": "wpn_28",
+  "尤米弓": "wpn_29",
+  "雙手劍": "wpn_2hsword",
+  "弓": "wpn_3",
+  "米索莉箭": "wpn_30",
+  "十字弓": "wpn_31",
+  "獵人之弓": "wpn_32",
+  "骰子匕首": "wpn_33",
+  "短劍的劍身": "wpn_34",
+  "長劍的劍身": "wpn_35",
+  "奧里哈魯根的劍身": "wpn_36",
+  "銀劍": "wpn_37",
+  "美基魔法杖": "wpn_38",
+  "潘的角": "wpn_39",
+  "矛": "wpn_4",
+  "覆上米索莉的角": "wpn_40",
+  "覆上奧里哈魯根的角": "wpn_41",
+  "箭": "wpn_5",
+  "巴迪須": "wpn_6",
+  "柴刀": "wpn_7",
+  "歐西斯弓": "wpn_8",
+  "闊劍": "wpn_9",
+  "亞連": "wpn_alien",
+  "古代神之斧": "wpn_ancient_axe",
+  "古代神之槍": "wpn_ancient_spear",
+  "暗殺軍王之痕": "wpn_assassin_mark",
+  "巴列斯魔杖": "wpn_baless",
+  "巴風特魔杖": "wpn_baphomet_wand",
+  "魔獸軍王之爪": "wpn_baranka_claw",
+  "巴蘭卡鋼爪": "wpn_baranka_steelclaw",
+  "戰斧": "wpn_battleaxe",
+  "狂戰士斧": "wpn_berserker",
+  "黑焰之劍": "wpn_blackflame_sword",
+  "血色巨劍": "wpn_blood_2hsword",
+  "拉斯塔巴德弓": "wpn_bow_rasta",
+  "消滅者鎖鏈劍": "wpn_chain_annihilator",
+  "嗜血者鎖鏈劍": "wpn_chain_bloodthirst",
+  "破滅者鎖鏈劍": "wpn_chain_destroyer",
+  "寒冰鎖鏈劍": "wpn_chain_frost",
+  "共鳴鎖鏈劍": "wpn_chain_resonance",
+  "混沌之刺": "wpn_chaos_thorn",
+  "暗黑鋼爪": "wpn_claw_abyss",
+  "青銅鋼爪": "wpn_claw_bronze",
+  "大馬士革鋼爪": "wpn_claw_damascus",
+  "黑暗鋼爪": "wpn_claw_dark",
+  "幽暗鋼爪": "wpn_claw_gloom",
+  "暗影鋼爪": "wpn_claw_shadow",
+  "銀光鋼爪": "wpn_claw_silver",
+  "鋼鐵鋼爪": "wpn_claw_steel",
+  "深紅長矛": "wpn_crimson_spear",
+  "水晶短劍": "wpn_crystal_dagger",
+  "水晶魔杖": "wpn_crystalwand",
+  "歐西斯匕首": "wpn_dagger1",
+  "精靈匕首": "wpn_dagger2",
+  "拉斯塔巴德短劍": "wpn_dagger_rasta",
+  "大馬士革刀": "wpn_damascus",
+  "黑暗之劍": "wpn_dark_sword",
+  "黑法師之杖": "wpn_darkmage_wand",
+  "死亡之指": "wpn_death_finger",
+  "惡魔斧頭": "wpn_demon_axe",
+  "惡魔鋼爪": "wpn_demon_claw",
+  "惡魔雙刀": "wpn_demon_dual",
+  "惡魔鐮刀": "wpn_demon_scythe",
+  "惡魔之劍": "wpn_demon_sword",
+  "惡魔十字弓": "wpn_demon_xbow",
+  "惡魔王雙手劍": "wpn_demonking_2hsword",
+  "惡魔王弓": "wpn_demonking_bow",
+  "惡魔王雙刀": "wpn_demonking_dual",
+  "惡魔王矛": "wpn_demonking_spear",
+  "惡魔王魔杖": "wpn_demonking_wand",
+  "死亡騎士的烈炎之劍": "wpn_dk_flameblade",
+  "龍騎士雙手劍": "wpn_dragon_2h",
+  "屠龍劍": "wpn_dragonslayer",
+  "暗黑雙刀": "wpn_dual_abyss",
+  "青銅雙刀": "wpn_dual_bronze",
+  "大馬士革雙刀": "wpn_dual_damascus",
+  "黑暗雙刀": "wpn_dual_dark",
+  "幽暗雙刀": "wpn_dual_gloom",
+  "拉斯塔巴德雙刀": "wpn_dual_rasta",
+  "暗影雙刀": "wpn_dual_shadow",
+  "銀光雙刀": "wpn_dual_silver",
+  "鋼鐵雙刀": "wpn_dual_steel",
+  "精靈弓": "wpn_elfbow",
+  "精靈短劍": "wpn_elfsword",
+  "熾炎天使弓": "wpn_flaming_angel",
+  "巨斧": "wpn_giantaxe",
+  "巨劍": "wpn_greatsword",
+  "法丘": "wpn_halberd",
+  "恨之鋼爪": "wpn_hate_claw",
+  "冰之女王魔杖": "wpn_icequeen_wand",
+  "幻術士魔杖": "wpn_illu_wand",
+  "侵略者之劍": "wpn_invader",
+  "武士刀": "wpn_katana",
+  "克特之劍": "wpn_kurt_sword",
+  "蕾雅魔杖": "wpn_laia_wand",
+  "長劍": "wpn_longsword",
+  "鎖子甲破壞者": "wpn_mailbreaker",
+  "瑪那水晶球": "wpn_mana_orb",
+  "魔力短劍": "wpn_manadagger",
+  "瑪那魔杖": "wpn_manawand",
+  "米索莉短劍": "wpn_mithril_dagger",
+  "橡木魔法杖": "wpn_oakwand",
+  "武官雙手劍": "wpn_official_2h",
+  "古老的巨劍": "wpn_old_greatsword",
+  "古老的劍": "wpn_old_sword",
+  "古老的弩槍": "wpn_old_xbow",
+  "奧里哈魯根短劍": "wpn_ori_dagger",
+  "失去魔力的巴列斯魔杖": "wpn_powerless_baless",
+  "失去魔力的巴風特魔杖": "wpn_powerless_baphomet",
+  "神官魔杖": "wpn_priest_wand",
+  "寒冰奇古獸": "wpn_qigu_frost",
+  "冥想奇古獸": "wpn_qigu_meditate",
+  "黑曜石奇古獸": "wpn_qigu_obsidian",
+  "共鳴奇古獸": "wpn_qigu_resonance",
+  "藍寶石奇古獸": "wpn_qigu_sapphire",
+  "細劍": "wpn_rapier",
+  "紅水晶魔杖": "wpn_red_crystalwand",
+  "赤焰之弓": "wpn_redflame_bow",
+  "赤焰之劍": "wpn_redflame_sword",
+  "紅騎士之劍": "wpn_redknight",
+  "彎刀": "wpn_scimitar",
+  "沙哈之箭": "wpn_shaha_arrow",
+  "沙哈之弓": "wpn_shaha_bow",
+  "短弓": "wpn_shortbow",
+  "短劍": "wpn_shortsword",
+  "銀斧": "wpn_silveraxe",
+  "銀長劍": "wpn_silversword",
+  "瑟魯基之劍": "wpn_siruge",
+  "小武士刀": "wpn_small_katana",
+  "拉斯塔巴德矛": "wpn_spear_rasta",
+  "力量魔法杖": "wpn_strwand",
+  "拉斯塔巴德長劍": "wpn_sword_rasta",
+  "牛人斧頭": "wpn_taurus_axe",
+  "底比斯歐西里斯雙手劍": "wpn_thebes_2hsword",
+  "底比斯歐西里斯弓": "wpn_thebes_bow",
+  "底比斯歐西里斯雙刀": "wpn_thebes_dual",
+  "底比斯歐西里斯魔杖": "wpn_thebes_wand",
+  "騎士范德之劍": "wpn_vander_sword",
+  "復仇之劍": "wpn_vengeance",
+  "拉斯塔巴德魔杖": "wpn_wand_rasta",
+  "巫術魔法杖": "wpn_witchwand",
+  "暗黑十字弓": "wpn_xbow_abyss",
+  "黑暗十字弓": "wpn_xbow_dark",
+  "幽暗十字弓": "wpn_xbow_gloom",
+  "拉斯塔巴德重十字弓": "wpn_xbow_heavy_rasta",
+  "拉斯塔巴德十字弓": "wpn_xbow_rasta",
+};
+
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Fable 5 Save Editor v2 — Popup Script
+// ═══════════════════════════════════════════════════════════════
+
+const MAX_SLOTS = 8;
+let saveData = null;
+let slots = [];
+let currentSlot = 0;
+
+// ─── Sort state ───────────────────────────────────────────────
+let invSort = 'default';
+let invFilter = '';
+let invCatFilter = '';
+
+// ─── Data dictionaries ────────────────────────────────────────
+const ITEM_CATS = {
+  wpn:'⚔️武器', amr:'🛡️鎧甲', arm:'🛡️護甲', hlm:'🪖頭盔', shd:'🛡️盾牌',
+  clk:'🧥披風', glv:'🧤手套', bot:'👢靴子', acc:'💍飾品', amu:'📿項鍊',
+  blt:'🪢腰帶', rng:'💍戒指', bk:'📜卷軸', scroll:'📜卷軸', potion:'🧪藥水',
+  panacea:'🧪萬靈藥', mat:'📦材料', item:'📦道具', quest:'📋任務', new:'❓新物'
+};
+
+const BUFF_NAMES = {
+  haste:'⚡加速術', brave:'⚔️勇猛術', blue:'🔵藍藥', cautious:'🛡️謹慎術',
+  elfcookie:'🍪精靈餅乾', poly:'🌀變身術', shield:'🛡️護盾術', taming:'🐾馴服',
+  sk_resurrection:'✝️復活術', sk_charm:'💕魅惑術', sk_magic_shield:'🔮魔盾',
+  sk_shield:'🛡️盾擊', sk_reveal:'👁️偵測', sk_ench_wpn:'✨附魔武器',
+  sk_holy_wpn:'✝️聖武', sk_sunlight:'☀️陽光術', sk_load_up:'💪負重術',
+  sk_shield2:'🛡️強盾', sk_haste_spell:'⚡加速咒', sk_summon:'🐾召喚',
+  sk_greater_haste:'⚡強加速', sk_dex_up:'🏹敏增', sk_str_up:'💪力增',
+  sk_holy_dash:'✝️聖衝', sk_bless_wpn:'✝️祝福武', sk_zombie:'💀殭屍',
+  sk_fire_prison:'🔥火牢', sk_meditation:'🧘冥想', sk_holy_barrier:'✝️聖障',
+  sk_berserk:'💢狂暴'
+};
+
+const SKILL_NAMES = {
+  sk_abs_barrier:'絕對屏障', sk_antidote:'解毒術', sk_aurora:'極光雷電',
+  sk_berserk:'狂暴術', sk_blaze:'烈炎術', sk_bless_wpn:'祝福魔法武器',
+  sk_blizzard:'冰雪暴', sk_blizzard_storm:'冰雪颶風', sk_break:'壞物術',
+  sk_cancel:'魔法相消術', sk_charm:'迷魅術', sk_chill:'寒冰氣息',
+  sk_cold_shiver:'寒冷戰慄', sk_counter_barrier:'反擊屏障',
+  sk_dark_armorbreak:'破壞盔甲', sk_dark_blind:'闇盲咒術',
+  sk_dark_burn:'燃燒鬥志', sk_dark_crit:'會心一擊',
+  sk_dark_dex:'敏捷提升', sk_dark_dodge:'暗影閃避',
+  sk_dark_double:'雙重破壞', sk_dark_erup:'迴避提升',
+  sk_dark_fang:'暗影之牙', sk_dark_mrup:'影之防護',
+  sk_dark_poison:'附加劇毒', sk_dark_poisonres:'毒性抵抗',
+  sk_dark_refine:'提煉魔石', sk_dark_shadow:'黑闇之影',
+  sk_dark_stealth:'暗隱術', sk_dark_str:'力量提升',
+  sk_dark_walkhaste:'行走加速', sk_dex_up:'通暢氣脈術',
+  sk_disease:'疾病術', sk_disintegrate:'究極光裂術',
+  sk_earthquake:'地裂術', sk_elf_attrfire:'屬性之火',
+  sk_elf_blazewpn:'烈炎武器', sk_elf_dancefire:'舞躍之火',
+  sk_elf_earthbless:'大地的祝福', sk_elf_earthguard:'大地防護',
+  sk_elf_earthshield:'大地屏障', sk_elf_eleres:'屬性防禦',
+  sk_elf_energyboost:'能量激發', sk_elf_firewpn:'火焰武器',
+  sk_elf_flamesoul:'烈焰之魂', sk_elf_groundtrap:'地面障礙',
+  sk_elf_lifebless:'生命的祝福', sk_elf_lifespring:'生命之泉',
+  sk_elf_magicerase:'魔法消除', sk_elf_mind:'心靈轉換',
+  sk_elf_mirror:'鏡反射', sk_elf_mr:'魔法防禦',
+  sk_elf_physboost:'體能激發', sk_elf_purify:'淨化精神',
+  sk_elf_release:'釋放元素', sk_elf_seal:'封印禁地',
+  sk_elf_singleres:'單屬性防禦', sk_elf_soul:'魂體轉換',
+  sk_elf_steelguard:'鋼鐵防護', sk_elf_stormeye:'暴風之眼',
+  sk_elf_stormshot:'暴風神射', sk_elf_summon:'召喚精靈',
+  sk_elf_summon2:'上級精靈', sk_elf_triple:'三連射',
+  sk_elf_watervital:'水之元氣', sk_elf_winddash:'風之疾走',
+  sk_elf_windshot:'風之神射', sk_elf_worldtree:'世界樹的呼喚',
+  sk_ench_wpn:'擬似魔法武器', sk_energy_sense:'能量感測',
+  sk_fire_prison:'火牢', sk_fire_storm:'火風暴',
+  sk_firearrow:'火箭', sk_fireball:'燃燒的火球',
+  sk_full_heal:'全部治癒術', sk_greater_haste:'強力加速術',
+  sk_haste_spell:'加速術', sk_heal_mid:'中級治癒術',
+  sk_heal1:'初級治癒術', sk_heal2:'高級治癒術',
+  sk_hell_fang:'地獄之牙',
+  sk_helm_dex1:'敏盔：氣脈通暢術', sk_helm_dex2:'敏盔：加速術',
+  sk_helm_heal1:'治盔：初級治癒術', sk_helm_heal2:'治盔：中級治癒術',
+  sk_helm_str1:'力盔：擬似魔法武器', sk_helm_str2:'力盔：無所遁形術',
+  sk_helm_str3:'力盔：體魄強健術',
+  sk_holy_barrier:'聖結界', sk_holy_dash:'神聖疾走',
+  sk_holy_light:'聖潔之光', sk_holy_wpn:'神聖武器',
+  sk_ice_lance:'冰矛圍籬', sk_ice_spike:'冰錐',
+  sk_icearrow:'冰箭', sk_invisible:'隱身術',
+  sk_lightarrow:'光箭', sk_load_up:'負重強化',
+  sk_magic_shield:'魔法屏障', sk_mana_drain:'魔力奪取',
+  sk_meditation:'冥想術', sk_meteor:'流星雨',
+  sk_mummy_curse:'木乃伊的詛咒', sk_poison_curse:'毒咒',
+  sk_quake:'震裂術', sk_reduction_armor:'增幅防禦',
+  sk_regen:'體力回復術', sk_resurrection:'返生術',
+  sk_reveal:'無所遁形術', sk_rock_prison:'岩牢',
+  sk_seal:'魔法封印', sk_shield:'保護罩',
+  sk_shield2:'鎧甲護持',
+  sk_sleep_mist:'沉睡之霧', sk_slow:'緩速術',
+  sk_solid_shield:'堅固防護', sk_soul_up:'靈魂昇華',
+  sk_spike_armor:'尖刺盔甲', sk_str_up:'體魄強健術',
+  sk_summon:'召喚術', sk_sunlight:'日光術',
+  sk_teleport:'傳送術', sk_thunder:'極道落雷',
+  sk_thunder_storm:'雷霆風暴', sk_tornado:'龍捲風',
+  sk_undead_bane:'起死回生術', sk_vampire:'吸血鬼之吻',
+  sk_weaken:'弱化術', sk_windblade:'風刃',
+  sk_zombie:'隨從：人形殭屍'
+};
+
+const STATUS_NAMES = {
+  stun:'⚡暈眩', freeze:'❄️冰凍', stone:'🪨石化', poison:'☠️中毒',
+  burn:'🔥燃燒', scald:'♨️燙傷', bleed:'🩸流血', sleep:'😴睡眠',
+  silence:'🔇沉默', paralyze:'⚡麻痺', magicseal:'🔮魔封',
+  armorBreak:'💔破甲', slowAtk:'🐢慢攻', cleave:'⚔️劈砍'
+};
+
+const DERIVED_DEFS = [
+  {key:'meleeDmg',label:'近戰傷害'},{key:'meleeHit',label:'近戰命中'},
+  {key:'meleeCrit',label:'近戰暴擊%'},{key:'meleeCritDmg',label:'近戰暴傷%'},
+  {key:'rangedDmg',label:'遠程傷害'},{key:'rangedHit',label:'遠程命中'},
+  {key:'rangedCrit',label:'遠程暴擊%'},{key:'rangedCritDmg',label:'遠程暴傷%'},
+  {key:'magicDmg',label:'魔法傷害'},{key:'magicHit',label:'魔法命中'},
+  {key:'magicCrit',label:'魔法暴擊%'},{key:'magicCritDmg',label:'魔法暴傷%'},
+  {key:'extraDmg',label:'額外傷害'},{key:'extraHit',label:'額外命中'},
+  {key:'extraMp',label:'額外MP'},{key:'mpReduce',label:'MP消耗減%'},
+  {key:'ac',label:'護甲AC'},{key:'mr',label:'魔抗MR'},{key:'er',label:'躲閃ER%'},
+  {key:'dr',label:'減傷DR%'},{key:'resFire',label:'火抗%'},
+  {key:'resWater',label:'水抗%'},{key:'resEarth',label:'地抗%'},
+  {key:'resWind',label:'風抗%'},{key:'magicDrNonEle',label:'非元素減傷%'},
+  {key:'hpRegenMax',label:'HP最大回復'},{key:'hpR',label:'HP回復/回合'},
+  {key:'mpR',label:'MP回復/回合'},{key:'aspd',label:'攻速ASPD'},
+  {key:'spdMult',label:'速度倍率'},{key:'weightCur',label:'當前負重'},
+  {key:'weightLimit',label:'最大負重'},{key:'immStone',label:'免疫石化',type:'bool'},
+  {key:'immPoison',label:'免疫中毒',type:'bool'}
+];
+
+const EQ_SLOTS = [
+  {key:'wpn',label:'⚔️ 武器'},{key:'helm',label:'🪖 頭盔'},{key:'armor',label:'🛡️ 鎧甲'},
+  {key:'shield',label:'🛡️ 盾牌'},{key:'cloak',label:'🧥 披風'},{key:'tshirt',label:'👕 T卹'},
+  {key:'gloves',label:'🧤 手套'},{key:'boots',label:'👢 靴子'},{key:'ring1',label:'💍 戒指1'},
+  {key:'ring2',label:'💍 戒指2'},{key:'ring3',label:'💍 戒指3'},{key:'ring4',label:'💍 戒指4'},
+  {key:'amulet',label:'📿 項鍊'},{key:'belt',label:'🪢 腰帶'},{key:'arrow',label:'🏹 箭矢'},
+];
+
+const SET_BONUSES = [
+  {key:'_setRedLion5',label:'🦁 紅獅5件'},{key:'_setWhiteBird5',label:'🕊️ 白鳥5件'},
+  {key:'_setIron3',label:'⚙️ 鐵3件'},{key:'_setIron5',label:'⚙️ 鐵5件'},
+  {key:'_setBeauty5',label:'💎 美5件'},{key:'_setGale5',label:'🌪️ 疾風5件'},
+  {key:'_setMoon5',label:'🌙 月5件'},{key:'_setApprentice5',label:'📖 學徒5件'},
+  {key:'_setWitch5',label:'🧙 女巫5件'},{key:'_setShadow3',label:'🌑 暗影3件'},
+  {key:'_setShadow5',label:'🌑 暗影5件'},
+];
+
+const AUTO_BUFF_KEYS = [
+  {key:'setHaste',label:'加速術',buyKey:'setAutoBuyHaste'},
+  {key:'setBrave',label:'勇猛術',buyKey:'setAutoBuyBrave'},
+  {key:'setBlue',label:'藍藥',buyKey:'setAutoBuyBlue'},
+  {key:'setCautious',label:'謹慎術',buyKey:'setAutoBuyCautious'},
+  {key:'setElfcookie',label:'精靈餅乾',buyKey:'setAutoBuyElfcookie'},
+  {key:'setPoly',label:'變身術',buyKey:'setAutoBuyPoly'},
+  {key:'setMagicbarrier',label:'魔盾',buyKey:null},
+  {key:'setTeleport',label:'傳送術',buyKey:'setAutoBuyTeleport'},
+  {key:'setAutoBuyArrow',label:'自動買箭',buyKey:null},
+];
+
+// ─── INIT ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadSlots(); renderSlots();
+  if (slots.length > 0 && slots[currentSlot]) loadSlot(currentSlot);
+  initTabs(); initActions(); initPresets(); initInvToolbar(); initModal(); initDerivedGrid();
+});
+
+// ─── TABS ─────────────────────────────────────────────────────
+function initTabs() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+// ─── STORAGE ──────────────────────────────────────────────────
+function loadSlots() { try { slots = JSON.parse(localStorage.getItem('f5_slots') || '[]'); } catch { slots = []; } }
+function saveSlots() { localStorage.setItem('f5_slots', JSON.stringify(slots)); }
+function loadSlot(i) {
+  if (!slots[i]) return;
+  saveData = JSON.parse(JSON.stringify(slots[i].data));
+  currentSlot = i; renderSlots(); renderAll();
+  showToast(`已載入存檔槽 ${i+1}`, 'success');
+}
+function extractMeta(d) { if (!d?.p) return ''; const p=d.p; return `${p.cls||'?'} Lv.${p.lv} | ${fmtNum(p.gold)}G | ${p.inv?.length||0}物`; }
+function fmtNum(n) { if (n>=1e9) return (n/1e9).toFixed(1)+'B'; if (n>=1e6) return (n/1e6).toFixed(1)+'M'; if (n>=1e3) return (n/1e3).toFixed(1)+'K'; return n; }
+
+// ─── SLOT RENDER ──────────────────────────────────────────────
+function renderSlots() {
+  const c = document.getElementById('slot-list'); c.innerHTML = '';
+  for (let i = 0; i < MAX_SLOTS; i++) {
+    const s = slots[i]; const card = document.createElement('div'); card.className = 'slot-card';
+    if (s) {
+      const date = new Date(s.updatedAt).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+      card.innerHTML = `<div style="flex:1"><div class="slot-name">📦 存檔槽 ${i+1} ${i===currentSlot?'✅':''}</div><div class="slot-info">${s.meta||''}</div><div class="slot-meta">${date}</div></div><button class="btn btn-sm btn-secondary" data-action="load" data-idx="${i}">載入</button><button class="btn btn-sm btn-ghost" data-action="del" data-idx="${i}">🗑️</button>`;
+    } else {
+      card.innerHTML = `<div style="flex:1"><div class="slot-name" style="color:var(--text-muted)">📦 存檔槽 ${i+1} ${i===currentSlot?'✅':''}（空）</div></div>`;
+    }
+    c.appendChild(card);
+  }
+  c.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = parseInt(btn.dataset.idx);
+      if (btn.dataset.action === 'load') loadSlot(i);
+      if (btn.dataset.action === 'del' && slots[i]) { slots.splice(i,1); saveSlots(); renderSlots(); showToast('已刪除','success'); }
+    });
+  });
+}
+
+// ─── RENDER ALL ───────────────────────────────────────────────
+function renderAll() {
+  if (!saveData) return;
+  const p = saveData.p, d = p.d;
+
+  // Character
+  setVal('f-cls', p.cls); setVal('f-name', p.name||''); setVal('f-avatar', p.avatar||'');
+  setVal('f-lv', p.lv); setVal('f-exp', p.exp); setVal('f-gold', p.gold);
+  setVal('f-classic', p.classicMode?'true':'false'); setVal('f-panacea-used', p.panaceaUsed||0);
+  setVal('f-hp', p.hp); setVal('f-mhp', p.mhp); setVal('f-mp', p.mp); setVal('f-mmp', p.mmp);
+  setVal('f-dead', p.dead?'true':'false');
+
+  // Poly
+  if (p.poly) { setVal('f-poly-n', p.poly.n||''); setVal('f-poly-mgd', p.poly.mgd||0); setVal('f-poly-spd', p.poly.spd||0); setVal('f-poly-mpr', p.poly.mpr||0); setVal('f-poly-sp', p.poly.sp||0); }
+  else { ['f-poly-n','f-poly-mgd','f-poly-spd','f-poly-mpr','f-poly-sp'].forEach(id=>setVal(id,'')); }
+
+  // Blessings
+  if (p.blessings) { setVal('f-bless-brave',p.blessings.brave||0); setVal('f-bless-support',p.blessings.support||0); setVal('f-bless-precise',p.blessings.precise||0); setVal('f-bless-blaze',p.blessings.blaze||0); }
+
+  // Stats
+  setVal('f-str',p.base.str); setVal('f-dex',p.base.dex); setVal('f-con',p.base.con);
+  setVal('f-int',p.base.int); setVal('f-wis',p.base.wis); setVal('f-cha',p.base.cha);
+  setVal('f-bonus',p.bonus);
+  ['str','dex','con','int','wis','cha'].forEach(s => { setVal('f-alloc-'+s,p.alloc[s]); setVal('f-pan-'+s,p.panacea[s]); });
+  setVal('f-pan-used',p.panaceaUsed);
+
+  // Derived
+  if (d) DERIVED_DEFS.forEach(({key,type}) => { const el=document.getElementById('f-d-'+key); if(el){ el.value = type==='bool'?(d[key]?'true':'false'):d[key]; }});
+
+  // World
+  const mc = p.lastMapByCat||{};
+  setVal('f-map-village',mc.village||''); setVal('f-map-wild',mc.wild||''); setVal('f-map-dungeon',mc.dungeon||'');
+  setVal('f-map-special',mc.special||''); setVal('f-map-tower',mc.tower||''); setVal('f-map-siege',mc.siege||'');
+  setVal('f-map-castle',mc.castle||''); setVal('f-last-battle',p.lastBattleMap||'');
+
+  setVal('f-siege-active',p.siege?.active?'true':'false'); setVal('f-siege-gate',p.siege?.gateKilled?'true':'false');
+  setVal('f-siege-tower',p.siege?.towerKilled?'true':'false'); setVal('f-siege-gate-hp',p.siege?.gateHp||0);
+  setVal('f-siege-tower-hp',p.siege?.towerHp||0); setVal('f-siege-kills',p.siege?.kills||0);
+  setVal('f-siege-result',p.siege?.result||''); setVal('f-siege-city',p.siege?.city||'');
+  setVal('f-siege-victory-city',p.siege?.victoryCity||'');
+
+  setVal('f-blood-pledge',p.bloodPledge||''); setVal('f-sherine-world',p.sherineWorld?'true':'false');
+  setVal('f-pride-beat',p.prideBeatJenis?'true':'false'); setVal('f-demon-temple',p.demonTempleOpen?'true':'false');
+  setVal('f-flame-affinity',p.flameAffinity||0); setVal('f-trial-stage',p.trialStage||0);
+  setVal('f-ismael-used',p.ismaelAccUsed?'true':'false');
+
+  // Castle guard
+  document.getElementById('castle-guard-info').textContent = p.castleGuard ? JSON.stringify(p.castleGuard) : '無資料';
+
+  // Config
+  if (p.config) {
+    setVal('f-cfg-pot',p.config.setPot||''); setVal('f-cfg-pot-hp',p.config.setHpPot||70);
+    setVal('f-cfg-auto-buy-pot',p.config.setAutoBuyPot?'true':'false');
+    setVal('f-cfg-sel-atk',p.config.selAtkSkill||''); setVal('f-cfg-mp-atk',p.config.setMpAtk||50);
+    setVal('f-cfg-sel-heal',p.config.selHealSkill||''); setVal('f-cfg-mp-heal',p.config.setMpHeal||50);
+    setVal('f-cfg-sel-convert',p.config.selConvertSkill||''); setVal('f-cfg-hp-convert',p.config.setHpConvert||50);
+  }
+  if (p.pandoraMarket) { setVal('f-pandora-id',p.pandoraMarket.id||''); setVal('f-pandora-price',p.pandoraMarket.price||0); setVal('f-pandora-weight',p.pandoraMarket.weight||0); }
+
+  // Summon
+  if (p.summon) { setVal('f-summon-skid',p.summon.skId||''); setVal('f-summon-n',p.summon.n||''); setVal('f-summon-cd',p.summon.cd||0); }
+
+  renderInventory(); renderEquipment(); renderSkills(); renderBuffs(); renderAllies();
+  renderStatuses(); renderCds(); renderAutoBuffs(); renderSetBonuses(); renderJunkPrefs();
+}
+
+// ─── APPLY ALL FIELDS → saveData ──────────────────────────────
+function applyAllFields() {
+  if (!saveData) return;
+  const p = saveData.p, d = p.d;
+  p.cls=val('f-cls'); p.name=val('f-name')||null; p.avatar=val('f-avatar');
+  p.lv=num('f-lv'); p.exp=num('f-exp'); p.gold=num('f-gold');
+  p.classicMode=bool('f-classic'); p.panaceaUsed=num('f-panacea-used');
+  p.hp=num('f-hp'); p.mhp=num('f-mhp'); p.mp=num('f-mp'); p.mmp=num('f-mmp');
+  p.dead=bool('f-dead');
+
+  if (val('f-poly-n')) { p.poly = p.poly||{}; p.poly.n=val('f-poly-n'); p.poly.mgd=num('f-poly-mgd'); p.poly.spd=num('f-poly-spd'); p.poly.mpr=num('f-poly-mpr'); p.poly.sp=num('f-poly-sp'); p.poly.c=p.poly.c||'text-yellow-400'; }
+  if (p.blessings) { p.blessings.brave=num('f-bless-brave'); p.blessings.support=num('f-bless-support'); p.blessings.precise=num('f-bless-precise'); p.blessings.blaze=num('f-bless-blaze'); }
+
+  p.base.str=num('f-str'); p.base.dex=num('f-dex'); p.base.con=num('f-con');
+  p.base.int=num('f-int'); p.base.wis=num('f-wis'); p.base.cha=num('f-cha');
+  p.bonus=num('f-bonus');
+  ['str','dex','con','int','wis','cha'].forEach(s=>{p.alloc[s]=num('f-alloc-'+s);p.panacea[s]=num('f-pan-'+s);});
+  p.panaceaUsed=num('f-pan-used');
+
+  if (d) DERIVED_DEFS.forEach(({key,type})=>{ const el=document.getElementById('f-d-'+key); if(el) d[key]=type==='bool'?bool('f-d-'+key):num('f-d-'+key); });
+
+  const mc=p.lastMapByCat=p.lastMapByCat||{};
+  mc.village=val('f-map-village'); mc.wild=val('f-map-wild'); mc.dungeon=val('f-map-dungeon');
+  mc.special=val('f-map-special'); mc.tower=val('f-map-tower'); mc.siege=val('f-map-siege'); mc.castle=val('f-map-castle');
+  p.lastBattleMap=val('f-last-battle');
+
+  if (p.siege) { p.siege.active=bool('f-siege-active'); p.siege.gateKilled=bool('f-siege-gate'); p.siege.towerKilled=bool('f-siege-tower'); p.siege.gateHp=num('f-siege-gate-hp'); p.siege.towerHp=num('f-siege-tower-hp'); p.siege.kills=num('f-siege-kills'); p.siege.result=val('f-siege-result')||null; p.siege.city=val('f-siege-city'); p.siege.victoryCity=val('f-siege-victory-city')||null; }
+
+  p.bloodPledge=val('f-blood-pledge')||null; p.sherineWorld=bool('f-sherine-world');
+  p.prideBeatJenis=bool('f-pride-beat'); p.demonTempleOpen=bool('f-demon-temple');
+  p.flameAffinity=num('f-flame-affinity'); p.trialStage=num('f-trial-stage'); p.ismaelAccUsed=bool('f-ismael-used');
+
+  if (p.config) { p.config.setPot=val('f-cfg-pot'); p.config.setHpPot=val('f-cfg-pot-hp'); p.config.setAutoBuyPot=bool('f-cfg-auto-buy-pot'); p.config.selAtkSkill=val('f-cfg-sel-atk'); p.config.setMpAtk=val('f-cfg-mp-atk'); p.config.selHealSkill=val('f-cfg-sel-heal'); p.config.setMpHeal=val('f-cfg-mp-heal'); p.config.selConvertSkill=val('f-cfg-sel-convert'); p.config.setHpConvert=val('f-cfg-hp-convert'); }
+  if (p.pandoraMarket) { p.pandoraMarket.id=val('f-pandora-id'); p.pandoraMarket.price=num('f-pandora-price'); p.pandoraMarket.weight=num('f-pandora-weight'); }
+  if (p.summon) { p.summon.skId=val('f-summon-skid'); p.summon.n=val('f-summon-n'); p.summon.cd=num('f-summon-cd'); }
+}
+
+// ─── INVENTORY ────────────────────────────────────────────────
+function initInvToolbar() {
+  document.getElementById('inv-search').addEventListener('input', renderInventory);
+  document.getElementById('inv-cat-filter').addEventListener('change', function() { invCatFilter=this.value; renderInventory(); });
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active'); invSort=btn.dataset.sort; renderInventory();
+    });
+  });
+  // select all
+  document.getElementById('inv-sel-all').addEventListener('change', function() {
+    document.querySelectorAll('.inv-sel').forEach(cb => { cb.checked = this.checked; });
+  });
+  // batch delete
+  document.getElementById('btn-del-selected').addEventListener('click', () => {
+    const p=saveData?.p; if(!p) return;
+    const toDelete = new Set(Array.from(document.querySelectorAll('.inv-sel:checked')).map(cb=>parseInt(cb.dataset.idx)));
+    if(!toDelete.size) return;
+    if(!confirm(`確定刪除 ${toDelete.size} 項物品？`)) return;
+    p.inv = p.inv.filter((_,i)=>!toDelete.has(i));
+    renderInventory();
+  });
+}
+
+function getFilteredInv() {
+  const p = saveData?.p; if (!p) return [];
+  let items = p.inv.map((item,idx) => ({...item, _idx:idx}));
+  const search = document.getElementById('inv-search')?.value?.toLowerCase()||'';
+  if (search) items = items.filter(i => i.id.toLowerCase().includes(search) || i.uid.toLowerCase().includes(search) || (String(i.attr)||'').toLowerCase().includes(search));
+  if (invCatFilter) items = items.filter(i => i.id.startsWith(invCatFilter+'_'));
+  switch(invSort) {
+    case 'id': items.sort((a,b)=>a.id.localeCompare(b.id)); break;
+    case 'cnt-desc': items.sort((a,b)=>b.cnt-a.cnt); break;
+    case 'cnt-asc': items.sort((a,b)=>a.cnt-b.cnt); break;
+    case 'en-desc': items.sort((a,b)=>b.en-a.en); break;
+    case 'bless': items=items.filter(i=>i.bless); items.sort((a,b)=>a.id.localeCompare(b.id)); break;
+    case 'anc': items=items.filter(i=>i.anc); items.sort((a,b)=>a.id.localeCompare(b.id)); break;
+    case 'attr': items=items.filter(i=>i.attr&&i.attr!==false); items.sort((a,b)=>a.id.localeCompare(b.id)); break;
+    case 'lock': items=items.filter(i=>i.lock); items.sort((a,b)=>a.id.localeCompare(b.id)); break;
+  }
+  return items;
+}
+
+function renderInventory() {
+  const p = saveData?.p; if (!p) return;
+  const filtered = getFilteredInv();
+  document.getElementById('inv-show-count').textContent = filtered.length;
+  document.getElementById('inv-total-count').textContent = p.inv.length;
+  document.getElementById('inv-total-qty').textContent = p.inv.reduce((s,i)=>s+i.cnt,0).toLocaleString();
+
+  const c = document.getElementById('inv-list'); c.innerHTML = '';
+  filtered.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'item-card' + (item.lock?' highlight':'');
+    const prefix = item.id.split('_')[0];
+    const catLabel = ITEM_CATS[prefix]||'';
+    card.innerHTML = `
+      <div class="item-card-header">
+        <label class="inv-check"><input type="checkbox" class="inv-sel" data-idx="${item._idx}"></label>
+        <span class="item-card-id">${catLabel} ${item.id}</span>
+        <span class="item-card-dbname">${getItemDisplayName(item.id)||''}</span>
+        <span class="item-card-uid">${item.uid}</span>
+        <button class="item-del" data-idx="${item._idx}" title="刪除">✕</button>
+      </div>
+      <div class="item-card-row">
+        <input class="w-id" type="text" value="${item.id}" data-field="id" data-idx="${item._idx}" placeholder="ID">
+        <input class="w-cnt" type="number" value="${item.cnt}" data-field="cnt" data-idx="${item._idx}" min="0" title="數量">
+        <input class="w-en" type="number" value="${item.en}" data-field="en" data-idx="${item._idx}" min="0" title="強化">
+        <input class="w-attr" type="text" value="${item.attr&&item.attr!==false?item.attr:''}" data-field="attr" data-idx="${item._idx}" placeholder="屬性" title="屬性(e.g. fire3)">
+      </div>
+      <div class="item-card-row" style="margin-top:2px">
+        <span class="tag ${item.bless?'tag-bless':'tag-bless tag-off'}" data-field="bless" data-idx="${item._idx}">祝福</span>
+        <span class="tag ${item.anc?'tag-anc':'tag-anc tag-off'}" data-field="anc" data-idx="${item._idx}">遠古</span>
+        <span class="tag ${item.attr&&item.attr!==false?'tag-attr':'tag-attr tag-off'}" data-field="attr_toggle" data-idx="${item._idx}">屬性</span>
+        <span class="tag ${item.seteff?'tag-set':'tag-set tag-off'}" data-field="seteff" data-idx="${item._idx}">套裝</span>
+        <span class="tag ${item.lock?'tag-lock':'tag-lock tag-off'}" data-field="lock" data-idx="${item._idx}">🔒鎖</span>
+        <span class="tag ${item.junk?'tag-junk':'tag-junk tag-off'}" data-field="junk" data-idx="${item._idx}">垃圾</span>
+      </div>`;
+    c.appendChild(card);
+  });
+
+  // Bind inputs
+  c.querySelectorAll('input[data-field]').forEach(input => {
+    input.addEventListener('change', () => {
+      const idx=parseInt(input.dataset.idx), field=input.dataset.field, item=p.inv[idx];
+      if (field==='cnt'||field==='en') item[field]=parseInt(input.value)||0;
+      else if (field==='id') item.id=input.value;
+      else if (field==='attr') item.attr=input.value||false;
+    });
+  });
+  c.querySelectorAll('.tag[data-field]').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const idx=parseInt(tag.dataset.idx), field=tag.dataset.field, item=p.inv[idx];
+      if (field==='attr_toggle') { item.attr = item.attr&&item.attr!==false ? false : 'fire1'; }
+      else { item[field]=!item[field]; }
+      renderInventory();
+    });
+  });
+  c.querySelectorAll('.item-del').forEach(btn => {
+    btn.addEventListener('click', () => { p.inv.splice(parseInt(btn.dataset.idx),1); renderInventory(); });
+  });
+}
+
+// ─── EQUIPMENT ────────────────────────────────────────────────
+function renderEquipment() {
+  const p=saveData?.p; if(!p)return;
+  const c=document.getElementById('eq-grid'); c.innerHTML='';
+  EQ_SLOTS.forEach(({key,label})=>{
+    const item=p.eq?.[key]; const slot=document.createElement('div'); slot.className='eq-slot';
+    let tagsHtml='';
+    if(item){
+      if(item.bless)tagsHtml+='<span class="tag tag-bless">祝福</span>';
+      if(item.anc)tagsHtml+='<span class="tag tag-anc">遠古</span>';
+      if(item.attr&&item.attr!==false)tagsHtml+=`<span class="tag tag-attr">${item.attr}</span>`;
+      if(item.seteff)tagsHtml+='<span class="tag tag-set">套裝</span>';
+      if(item.lock)tagsHtml+='<span class="tag tag-lock">🔒</span>';
+    }
+    slot.innerHTML=`
+      <div class="eq-slot-name">${label}</div>
+      ${item?`<div class="eq-slot-item">${item.id} +${item.en}</div>`:'<div class="eq-slot-empty">(空)</div>'}
+      <div class="eq-slot-fields">
+        <input type="text" data-eq="${key}" data-field="id" value="${item?.id||''}" placeholder="物品 ID">
+        <input type="number" data-eq="${key}" data-field="en" value="${item?.en||0}" min="0" placeholder="強化">
+        <input type="text" data-eq="${key}" data-field="attr" value="${item?.attr&&item.attr!==false?item.attr:''}" placeholder="屬性">
+        <div class="eq-checks"><label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="bless" ${item?.bless?'checked':''}>祝福</label>
+        <label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="anc" ${item?.anc?'checked':''}>遠古</label>
+        <label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="lock" ${item?.lock?'checked':''}>🔒</label></div>
+      </div>
+      <div class="eq-slot-tags">${tagsHtml}</div>`;
+    c.appendChild(slot);
+  });
+  c.querySelectorAll('input[data-eq]').forEach(input=>{
+    input.addEventListener('change',()=>{
+      const key=input.dataset.eq, field=input.dataset.field;
+      if(!p.eq[key]) p.eq[key]={uid:randUid(),cnt:1,en:0,bless:false,anc:false,attr:false,seteff:false,lock:false,junk:false};
+      if(field==='id'){if(input.value)p.eq[key].id=input.value;else p.eq[key]=null;}
+      else if(field==='en')p.eq[key].en=parseInt(input.value)||0;
+      else if(field==='attr')p.eq[key].attr=input.value||false;
+      else if(field==='bless')p.eq[key].bless=input.checked;
+      else if(field==='anc')p.eq[key].anc=input.checked;
+      else if(field==='lock')p.eq[key].lock=input.checked;
+      renderEquipment();
+    });
+  });
+}
+
+// ─── SKILLS ───────────────────────────────────────────────────
+function renderSkills() {
+  const p=saveData?.p; if(!p)return;
+  const search=document.getElementById('skill-search')?.value?.toLowerCase()||'';
+  const skills=(p.skills||[]).filter(s=>!search||s.toLowerCase().includes(search)||(SKILL_NAMES[s]||'').includes(search));
+  document.getElementById('skill-count').textContent=p.skills?.length||0;
+  const c=document.getElementById('skills-list'); c.innerHTML='';
+  skills.forEach((sk,idx)=>{
+    const realIdx=p.skills.indexOf(sk);
+    const chip=document.createElement('div'); chip.className='skill-chip';
+    const cn=SKILL_NAMES[sk]||'';
+    chip.innerHTML=`<span class="skill-name">${sk}</span>${cn?'<span class="skill-cn">'+cn+'</span>':''}<span class="skill-del" data-idx="${realIdx}">✕</span>`;
+    c.appendChild(chip);
+  });
+  c.querySelectorAll('.skill-del').forEach(btn=>{
+    btn.addEventListener('click',()=>{p.skills.splice(parseInt(btn.dataset.idx),1);renderSkills();});
+  });
+}
+
+// ─── BUFFS ────────────────────────────────────────────────────
+function renderBuffs() {
+  const p=saveData?.p; if(!p)return;
+  const search=document.getElementById('buff-search')?.value?.toLowerCase()||'';
+  const buffs=p.buffs||{};
+  const entries=Object.entries(buffs).filter(([k])=>!search||k.toLowerCase().includes(search)||(BUFF_NAMES[k]||'').includes(search));
+  const activeCount=Object.values(buffs).filter(v=>v>0).length;
+  document.getElementById('buff-count').textContent=activeCount;
+  const c=document.getElementById('buffs-list'); c.innerHTML='';
+  entries.forEach(([key,val])=>{
+    const row=document.createElement('div'); row.className='buff-row';
+    const name=BUFF_NAMES[key]||key;
+    row.innerHTML=`<span class="buff-name ${val>0?'buff-active':''}">${name}</span><input class="buff-val" type="number" value="${val}" min="0" data-buff="${key}">`;
+    c.appendChild(row);
+  });
+  c.querySelectorAll('input[data-buff]').forEach(input=>{
+    input.addEventListener('change',()=>{if(p.buffs)p.buffs[input.dataset.buff]=parseInt(input.value)||0;});
+  });
+}
+
+// ─── ALLIES ───────────────────────────────────────────────────
+function renderAllies() {
+  const p=saveData?.p; if(!p)return;
+  const c=document.getElementById('allies-list'); c.innerHTML='';
+  (p.allies||[]).forEach((ally,idx)=>{
+    const div=document.createElement('div'); div.className='item-card';
+    div.innerHTML=`<div class="item-card-header"><span class="item-card-id">🤝 ${ally.name||'夥伴'+idx} (${ally.cls})</span><span class="item-card-uid">Lv.${ally.lv} HP:${Math.round(ally.hp)}/${Math.round(ally.mhp)}</span></div>`;
+    c.appendChild(div);
+  });
+  if (!p.allies||p.allies.length===0) c.innerHTML='<div class="info-text">無夥伴</div>';
+}
+
+// ─── STATUSES ─────────────────────────────────────────────────
+function renderStatuses() {
+  const p=saveData?.p; if(!p||!p.statuses)return;
+  const c=document.getElementById('statuses-grid'); c.innerHTML='';
+  Object.entries(p.statuses).forEach(([key,val])=>{
+    if(key.endsWith('Dmg')||key.endsWith('Tick'))return;
+    const label=STATUS_NAMES[key]||key;
+    c.innerHTML+=`<label>${label}</label><input type="number" id="f-status-${key}" value="${val}" min="0">`;
+  });
+}
+
+function renderCds() {
+  const p=saveData?.p; if(!p)return;
+  const c=document.getElementById('cds-grid'); c.innerHTML='';
+  if(p.cds) Object.entries(p.cds).forEach(([k,v])=>{
+    c.innerHTML+=`<label>${k}</label><input type="number" id="f-cd-${k}" value="${v}" min="0">`;
+  });
+  c.innerHTML+=`<label>魔盾CD</label><input type="number" id="f-cd-magicshield" value="${p.magicShieldCd||0}" min="0">`;
+  c.innerHTML+=`<label>復活卷軸CD</label><input type="number" id="f-cd-revive" value="${p.reviveScrollCd||0}" min="0">`;
+  if(p.manualCd) Object.entries(p.manualCd).forEach(([k,v])=>{
+    c.innerHTML+=`<label>手動CD:${k}</label><input type="number" id="f-cd-manual-${k}" value="${v}" min="0">`;
+  });
+}
+
+// ─── AUTO BUFF CONFIG ─────────────────────────────────────────
+function renderAutoBuffs() {
+  const p=saveData?.p; if(!p||!p.config)return;
+  const c=document.getElementById('auto-buff-grid'); c.innerHTML='';
+  AUTO_BUFF_KEYS.forEach(({key,label,buyKey})=>{
+    c.innerHTML+=`<label>${label}</label><select id="f-cfg-${key}"><option value="false" ${!p.config[key]?'selected':''}>關</option><option value="true" ${p.config[key]?'selected':''}>開</option></select>`;
+    if(buyKey) c.innerHTML+=`<label>自動購買</label><select id="f-cfg-${buyKey}"><option value="false" ${!p.config[buyKey]?'selected':''}>關</option><option value="true" ${p.config[buyKey]?'selected':''}>開</option></select>`;
+  });
+}
+
+// ─── SET BONUSES ──────────────────────────────────────────────
+function renderSetBonuses() {
+  const p=saveData?.p; if(!p)return;
+  const c=document.getElementById('set-bonus-grid'); c.innerHTML='';
+  SET_BONUSES.forEach(({key,label})=>{
+    c.innerHTML+=`<label>${label}</label><select id="f-${key}"><option value="false" ${!p[key]?'selected':''}>否</option><option value="true" ${p[key]?'selected':''}>是</option></select>`;
+  });
+}
+
+// ─── JUNK PREFS ───────────────────────────────────────────────
+function renderJunkPrefs() {
+  const p=saveData?.p; if(!p)return;
+  const keys=Object.keys(p.junkPrefs||{});
+  document.getElementById('junk-count').textContent=keys.length;
+  const c=document.getElementById('junk-list'); c.innerHTML='';
+  keys.slice(0,30).forEach(k=>{ c.innerHTML+=`<div>${k}: ${JSON.stringify(p.junkPrefs[k])}</div>`; });
+  if(keys.length>30) c.innerHTML+=`<div>...及其他 ${keys.length-30} 項</div>`;
+}
+
+// ─── DERIVED GRID ─────────────────────────────────────────────
+function initDerivedGrid() {
+  const c=document.getElementById('derived-grid');
+  DERIVED_DEFS.forEach(({key,label,type})=>{
+    if(type==='bool') c.innerHTML+=`<label>${label}</label><select id="f-d-${key}"><option value="false">否</option><option value="true">是</option></select>`;
+    else c.innerHTML+=`<label>${label}</label><input type="number" id="f-d-${key}" step="0.01">`;
+  });
+}
+
+// ─── ACTIONS ──────────────────────────────────────────────────
+function initActions() {
+  // Save
+  document.getElementById('btn-save').addEventListener('click',()=>{ applyAllFields(); saveCurrentSlot(); });
+  document.getElementById('btn-load').addEventListener('click',()=>{ if(slots[currentSlot]){saveData=JSON.parse(JSON.stringify(slots[currentSlot].data));renderAll();showToast('已重載','success');} });
+  document.getElementById('btn-reset').addEventListener('click',()=>{ if(slots[currentSlot]){saveData=JSON.parse(JSON.stringify(slots[currentSlot].data));renderAll();showToast('已重置','success');} });
+
+  // File import
+  document.getElementById('btn-import-file').addEventListener('click',()=>document.getElementById('file-import').click());
+  document.getElementById('file-import').addEventListener('change',async e=>{
+    const file=e.target.files[0]; if(!file)return;
+    try { const text=await file.text(); const data=JSON.parse(text); if(!data.p)throw 0; saveData=data;
+      slots[currentSlot]={name:file.name.replace('.json',''),data:JSON.parse(JSON.stringify(data)),meta:extractMeta(data),updatedAt:Date.now()};
+      saveSlots();renderSlots();renderAll();showToast('已匯入：'+file.name,'success');
+    } catch { showToast('JSON 格式錯誤','error'); } e.target.value='';
+  });
+
+  // File export — use compact JSON (no indentation) to match game format
+  document.getElementById('btn-export-file').addEventListener('click',()=>{
+    applyAllFields(); if(!saveData){showToast('無資料','error');return;}
+    const blob=new Blob([JSON.stringify(saveData)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fable5_save.json';a.click();showToast('已匯出','success');
+  });
+
+  // Add item
+  document.getElementById('btn-add-item').addEventListener('click',()=>{ if(!saveData){showToast('請先匯入','error');return;} openAddItemModal(); });
+  document.getElementById('btn-del-junk').addEventListener('click',()=>{ if(!saveData)return; const before=saveData.p.inv.length; saveData.p.inv=saveData.p.inv.filter(i=>!i.junk); renderInventory(); showToast(`已刪除 ${before-saveData.p.inv.length} 件垃圾`,'success'); });
+  document.getElementById('btn-unlock-all').addEventListener('click',()=>{ if(!saveData)return; saveData.p.inv.forEach(i=>i.lock=false); renderInventory(); showToast('已全部解鎖','success'); });
+
+  // Add skill
+  const skillInput = document.getElementById('new-skill-id');
+  const skillDropdown = document.getElementById('skill-dropdown');
+  document.getElementById('btn-add-skill').addEventListener('click',()=>{
+    if(!saveData){showToast('請先匯入','error');return;}
+    const id=skillInput.value.trim(); if(!id){showToast('請輸入ID','error');return;}
+    // accept dropdown selected value
+    const realId = skillInput.dataset.sid || id;
+    if(!saveData.p.skills.includes(realId)){saveData.p.skills.push(realId);renderSkills();showToast('已新增：'+realId+(SKILL_NAMES[realId]?' ('+SKILL_NAMES[realId]+')':''),'success');}
+    else showToast('技能已存在','error');
+    skillInput.value=''; skillInput.dataset.sid=''; skillDropdown.classList.remove('open');
+  });
+  // skill search dropdown
+  skillInput.addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    if(q.length < 1) { skillDropdown.classList.remove('open'); return; }
+    const matches = Object.entries(SKILL_NAMES).filter(([k,v])=> k.toLowerCase().includes(q) || v.includes(q)).slice(0,10);
+    if(!matches.length) { skillDropdown.classList.remove('open'); return; }
+    skillDropdown.innerHTML = matches.map(([k,v])=>`<div class="skill-dd-item" data-sid="${k}"><span class="skill-dd-cn">${v}</span><span class="skill-dd-id">${k}</span></div>`).join('');
+    // position fixed below input
+    const rect = skillInput.getBoundingClientRect();
+    skillDropdown.style.top = rect.bottom + 'px';
+    skillDropdown.style.left = rect.left + 'px';
+    skillDropdown.style.width = rect.width + 'px';
+    skillDropdown.classList.add('open');
+  });
+  skillDropdown.addEventListener('click', function(e) {
+    const item = e.target.closest('.skill-dd-item');
+    if (!item) return;
+    const sid = item.dataset.sid;
+    skillInput.value = sid + ' (' + SKILL_NAMES[sid] + ')';
+    skillInput.dataset.sid = sid;
+    skillDropdown.classList.remove('open');
+  });
+  document.addEventListener('click', function(e) { if(!e.target.closest('.skill-search-add')&&!e.target.closest('.skill-dropdown')) skillDropdown.classList.remove('open'); });
+
+  // Clear poly
+  document.getElementById('btn-clear-poly').addEventListener('click',()=>{ if(!saveData)return; saveData.p.poly=null; renderAll(); showToast('已清除變身','success'); });
+  // Clear summon
+  document.getElementById('btn-clear-summon').addEventListener('click',()=>{ if(!saveData)return; saveData.p.summon=null; renderAll(); showToast('已清除召喚獸','success'); });
+
+  // JSON
+  document.getElementById('btn-load-json').addEventListener('click',()=>{ if(saveData)document.getElementById('json-editor').value=JSON.stringify(saveData,null,2); });
+  document.getElementById('btn-apply-json').addEventListener('click',()=>{
+    try { const data=JSON.parse(document.getElementById('json-editor').value); if(!data.p)throw 0; saveData=data; renderAll(); showToast('JSON 已套用','success'); }
+    catch(e){showToast('JSON 格式錯誤','error');}
+  });
+  document.getElementById('btn-format-json').addEventListener('click',()=>{
+    try { const data=JSON.parse(document.getElementById('json-editor').value); document.getElementById('json-editor').value=JSON.stringify(data,null,2); showToast('已格式化','success'); }
+    catch{showToast('JSON 無法解析','error');}
+  });
+  document.getElementById('btn-validate-json').addEventListener('click',()=>{
+    try { JSON.parse(document.getElementById('json-editor').value); document.getElementById('json-status').innerHTML='<span style="color:var(--success)">✅ JSON 格式正確</span>'; }
+    catch(e){ document.getElementById('json-status').innerHTML=`<span style="color:var(--danger)">❌ ${e.message}</span>`; }
+  });
+
+  // Skill / buff search
+  document.getElementById('skill-search')?.addEventListener('input',renderSkills);
+  document.getElementById('buff-search')?.addEventListener('input',renderBuffs);
+}
+
+function saveCurrentSlot() {
+  if(!saveData){showToast('無資料','error');return;}
+  applyAllFields();
+  const name=slots[currentSlot]?.name||`存檔 ${currentSlot+1}`;
+  slots[currentSlot]={name,data:JSON.parse(JSON.stringify(saveData)),meta:extractMeta(saveData),updatedAt:Date.now()};
+  saveSlots();renderSlots();showToast(`已儲存至槽 ${currentSlot+1}`,'success');
+}
+
+// ─── PRESETS ──────────────────────────────────────────────────
+function initPresets() {
+  document.querySelectorAll('[data-preset]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(!saveData){showToast('請先匯入','error');return;}
+      applyPreset(btn.dataset.preset); renderAll(); showToast('已套用：'+btn.textContent,'success');
+    });
+  });
+}
+
+function applyPreset(preset) {
+  const p=saveData.p;
+  switch(preset) {
+    case 'max-gold': p.gold=999999999; break;
+    case 'max-pots': { const pot=p.inv.find(i=>i.id==='potion_heal'); if(pot)pot.cnt=9999; } break;
+    case 'max-level': p.lv=99999; p.exp=0; break;
+    case 'max-stats': p.base.str=999;p.base.dex=999;p.base.con=999;p.base.int=999;p.base.wis=999;p.base.cha=999; break;
+    case 'max-hpmp': p.mhp=99999;p.hp=99999;p.mmp=99999;p.mp=99999; break;
+    case 'clear-buffs': Object.keys(p.buffs||{}).forEach(k=>p.buffs[k]=0); break;
+    case 'reset-cd': if(p.cds)Object.keys(p.cds).forEach(k=>p.cds[k]=0); p.magicShieldCd=0;p.reviveScrollCd=0;p.manualCd={}; break;
+    case 'clear-statuses': if(p.statuses)Object.keys(p.statuses).forEach(k=>p.statuses[k]=0); p.dead=false; break;
+    case 'bless-all': if(p.blessings){const now=Date.now();p.blessings.brave=now;p.blessings.support=now;p.blessings.precise=now;p.blessings.blaze=now;} break;
+    case 'unlock-inv': p.inv.forEach(i=>i.lock=false); break;
+  }
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────
+function val(id){const el=document.getElementById(id);return el?el.value:'';}
+function num(id){const el=document.getElementById(id);if(!el)return 0;const v=el.value.trim();if(v==='')return 0;const n=Number(v);return Number.isNaN(n)?0:n;}
+function bool(id){return document.getElementById(id)?.value==='true';}
+function setVal(id,v){const el=document.getElementById(id);if(!el)return;if(el.tagName==='INPUT'&&el.type==='checkbox')el.checked=!!v;else el.value=v??'';}
+function randUid(){return Math.random().toString(36).slice(2,11);}
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(type?' '+type:'');clearTimeout(t._timer);t._timer=setTimeout(()=>t.className='toast',2500);}
+
+// ─── ADD ITEM MODAL ────────────────────────────────────────────
+let modalSelectedItemId=null;
+
+function initModal() {
+  document.getElementById('modal-close-btn').addEventListener('click', closeAddItemModal);
+  document.getElementById('modal-cancel-btn').addEventListener('click', closeAddItemModal);
+  document.getElementById('item-modal-overlay').addEventListener('click', function(e) { if(e.target===this) closeAddItemModal(); });
+  document.getElementById('modal-item-search').addEventListener('input', filterModalItems);
+  document.getElementById('modal-cat-filter').addEventListener('change', filterModalItems);
+  document.getElementById('modal-confirm-btn').addEventListener('click', confirmAddItem);
+}
+
+function openAddItemModal() {
+  modalSelectedItemId=null;
+  document.getElementById('modal-item-search').value='';
+  document.getElementById('modal-cat-filter').value='';
+  document.getElementById('item-modal-overlay').style.display='flex';
+  document.getElementById('modal-confirm-btn').disabled=true;
+  document.getElementById('modal-item-preview').style.display='none';
+  filterModalItems();
+  // Auto-focus search
+  setTimeout(()=>document.getElementById('modal-item-search').focus(),100);
+}
+
+function closeAddItemModal() {
+  document.getElementById('item-modal-overlay').style.display='none';
+  modalSelectedItemId=null;
+}
+
+function filterModalItems() {
+  const query=document.getElementById('modal-item-search').value.toLowerCase().trim();
+  const catFilter=document.getElementById('modal-cat-filter').value;
+  const list=document.getElementById('modal-item-list');
+  
+  // Get matching items from ITEM_DB
+  let matches=[];
+  for(const [id,info] of Object.entries(ITEM_DB)) {
+    if(catFilter && info.c!==catFilter) continue;
+    if(!query || id.toLowerCase().includes(query) || (info.n&&info.n.toLowerCase().includes(query))) {
+      matches.push({id, ...info});
+    }
+  }
+  
+  // Sort: query results first by name, then by id
+  if(query) {
+    matches.sort((a,b)=>{
+      const aMatch=(a.n&&a.n.toLowerCase().includes(query))?0:1;
+      const bMatch=(b.n&&b.n.toLowerCase().includes(query))?0:1;
+      if(aMatch!==bMatch) return aMatch-bMatch;
+      return (a.n||'').localeCompare(b.n||'');
+    });
+  } else {
+    matches.sort((a,b)=>(a.c||'').localeCompare(b.c||'')||(a.n||'').localeCompare(b.n||''));
+  }
+  
+  if(matches.length>200) matches=matches.slice(0,200);
+  
+  if(matches.length===0) {
+    list.innerHTML='<div class="modal-item-row" style="color:var(--text-muted);cursor:default;justify-content:center;padding:12px">🔍 無符合物品</div>';
+    return;
+  }
+  
+  list.innerHTML=matches.map(m=>{
+    const selected=(m.id===modalSelectedItemId)?' selected':'';
+    const legend=m.legend?' <span class="mi-legend">★傳說</span>':'';
+    const dbn=m.n||m.id;
+    return '<div class="modal-item-row'+selected+'" data-id="'+m.id+'">'+
+      '<span class="mi-name">'+dbn+legend+'</span>'+
+      '<span class="mi-id">'+m.id+'</span>'+
+      '<span class="mi-cat">'+m.c+'</span>'+
+      '</div>';
+  }).join('');
+  
+  // Click handlers
+  list.querySelectorAll('.modal-item-row').forEach(row=>{
+    row.addEventListener('click',function(){
+      const id=this.dataset.id;
+      selectModalItem(id);
+    });
+  });
+}
+
+function selectModalItem(id) {
+  modalSelectedItemId=id;
+  document.querySelectorAll('.modal-item-row').forEach(r=>r.classList.remove('selected'));
+  const row=document.querySelector('.modal-item-row[data-id="'+id+'"]');
+  if(row) row.classList.add('selected');
+  
+  const info=ITEM_DB[id];
+  if(!info) return;
+  
+  const preview=document.getElementById('modal-item-preview');
+  preview.style.display='block';
+  document.getElementById('preview-name').textContent=info.n||id;
+  document.getElementById('preview-id').textContent=id;
+  document.getElementById('preview-type').textContent=(info.t||'通用');
+  document.getElementById('preview-legend').style.display=info.legend?'inline-block':'none';
+  document.getElementById('preview-db-name').textContent='📦 分類: '+info.c;
+  
+  // Generate UID
+  document.getElementById('modal-param-uid').value=randUid();
+  document.getElementById('modal-param-cnt').value=1;
+  document.getElementById('modal-param-en').value=0;
+  document.getElementById('modal-param-bless').checked=false;
+  document.getElementById('modal-param-anc').checked=false;
+  document.getElementById('modal-param-attr-ele').value='';
+  document.getElementById('modal-param-attr-lv').value='';
+  document.getElementById('modal-param-lock').checked=false;
+  document.getElementById('modal-param-junk').checked=false;
+  document.getElementById('modal-param-seteff').value='';
+  
+  document.getElementById('modal-confirm-btn').disabled=false;
+  document.getElementById('modal-confirm-btn').textContent='✅ 加入背包 (最上方)';
+}
+
+function confirmAddItem() {
+  if(!modalSelectedItemId || !saveData) return;
+  const cnt=parseInt(document.getElementById('modal-param-cnt').value)||1;
+  const en=parseInt(document.getElementById('modal-param-en').value)||0;
+  let uid=document.getElementById('modal-param-uid').value.trim();
+  if(!uid) uid=randUid();
+  const bless=document.getElementById('modal-param-bless').checked;
+  const anc=document.getElementById('modal-param-anc').checked;
+  const attrEle=document.getElementById('modal-param-attr-ele').value;
+  const attrLv=document.getElementById('modal-param-attr-lv').value;
+  const attr=attrEle?(attrEle+attrLv):false;
+  const lock=document.getElementById('modal-param-lock').checked;
+  const junk=document.getElementById('modal-param-junk').checked;
+  const seteff=document.getElementById('modal-param-seteff').value||false;
+  
+  const item={
+    id: modalSelectedItemId,
+    uid,
+    cnt: Math.max(1,cnt),
+    en: Math.max(0,Math.min(20,en)),
+    bless,
+    anc,
+    attr,
+    lock,
+    junk,
+    seteff
+  };
+  
+  // Insert at the beginning of inventory
+  saveData.p.inv.unshift(item);
+  renderInventory();
+  closeAddItemModal();
+  const dbn=ITEM_DB[modalSelectedItemId]?.n||modalSelectedItemId;
+  showToast('✅ 已加入 '+dbn+' ×'+cnt,'success');
+}
+
+// ─── ITEM DB NAME LOOKUP FOR DISPLAY ───────────────────────────
+function getItemDisplayName(id) {
+  if(ITEM_DB && ITEM_DB[id]) return ITEM_DB[id].n;
+  return null;
+}
+
+</script>
+</body>
+</html>
