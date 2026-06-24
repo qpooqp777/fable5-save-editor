@@ -3265,13 +3265,12 @@ function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 
 // ─── ITEM ICON ─────────────────────────────────────────────────
 const TYPE_ICON_DIR = {wpn:'weapons',arm:'armors',acc:'accessories',pot:'items',scroll:'items',misc:'items',etc:'items'};
-function itemIconHTML(id, cls) {
+function itemIconHTML(id) {
   const info = ITEM_DB && ITEM_DB[id];
-  if (!info) return '<span class="item-icon-fallback">📦</span>';
+  if (!info) return '<span class="item-icon-fallback">&#128280;</span>';
   const dir = TYPE_ICON_DIR[info.t] || 'items';
   const src = 'assets/icons/' + dir + '/' + encodeURIComponent(info.n) + '.png';
-  const fallback = '📦';
-  return '<img src="' + src + '" alt="' + esc(info.n) + '" class="' + (cls||'inv-item-icon') + '" onerror="this.outerHTML=\'" + fallback + "\'>";
+  return '<img src="' + src + '" alt="' + esc(info.n) + '" class="inv-item-icon" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"><span class="item-icon-fallback" style="display:none">&#128280;</span>';
 }
 
 // ─── ITEM DB NAME LOOKUP FOR DISPLAY ───────────────────────────
