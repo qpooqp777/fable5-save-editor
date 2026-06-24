@@ -772,7 +772,10 @@ function filterModalItems() {
     const selected=(m.id===modalSelectedItemId)?' selected':'';
     const legend=m.legend?' <span class="mi-legend">★傳說</span>':'';
     const dbn=m.n||m.id;
+    const dir=TYPE_ICON_DIR[m.t]||'items';
+    const src='assets/icons/'+dir+'/'+encodeURIComponent(m.n||m.id)+'.png';
     return '<div class="modal-item-row'+selected+'" data-id="'+m.id+'">'+
+      '<img src="'+src+'" alt="" class="mi-icon" onerror="this.style.display=\'none\'">'+
       '<span class="mi-name">'+dbn+legend+'</span>'+
       '<span class="mi-id">'+m.id+'</span>'+
       '<span class="mi-cat">'+m.c+'</span>'+
@@ -799,12 +802,31 @@ function selectModalItem(id) {
   
   const preview=document.getElementById('modal-item-preview');
   preview.style.display='block';
+
+  // Icon
+  const iconBox=document.getElementById('preview-icon-box');
+  const dir=TYPE_ICON_DIR[info.t]||'items';
+  const src='assets/icons/'+dir+'/'+encodeURIComponent(info.n)+'.png';
+  iconBox.innerHTML='<img src="'+src+'" alt="'+esc(info.n)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"><span class="item-icon-fallback" style="display:none">&#128280;</span>';
+
+  // Name + legend
   document.getElementById('preview-name').textContent=info.n||id;
-  document.getElementById('preview-id').textContent=id;
-  document.getElementById('preview-type').textContent=(info.t||'通用');
   document.getElementById('preview-legend').style.display=info.legend?'inline-block':'none';
-  document.getElementById('preview-db-name').textContent='📦 分類: '+info.c;
-  
+
+  // ID
+  document.getElementById('preview-id').textContent=id;
+
+  // Type badge
+  const typeMap={wpn:'武器',arm:'防具',acc:'飾品',pot:'藥水',scroll:'捲軸',misc:'其他',etc:'其他'};
+  document.getElementById('preview-type-badge').textContent=typeMap[info.t]||info.t||'通用';
+
+  // Detail tags
+  document.getElementById('preview-cat').textContent=info.c||'';
+  document.getElementById('preview-detail-type').textContent=info.legend?'\u2605 傳說':'\u25c6 普通';
+
+  // DB name
+  document.getElementById('preview-db-name').textContent='\U0001f4e6 分類: '+(info.c||'未知');
+
   // Generate UID
   document.getElementById('modal-param-uid').value=randUid();
   document.getElementById('modal-param-cnt').value=1;

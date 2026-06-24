@@ -205,21 +205,29 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .mi-id { font-size:9px; color:var(--text-muted); font-family:monospace; }
 .mi-cat { font-size:9px; color:var(--text-muted); padding:1px 4px; border-radius:3px; background:var(--bg); white-space:nowrap; }
 .mi-legend { color:var(--warning); font-size:10px; }
+.mi-icon { width:18px; height:18px; object-fit:contain; image-rendering:auto; flex-shrink:0; vertical-align:middle; margin-right:4px; }
+.modal-item-row { display:flex; align-items:center; gap:4px; }
 
 .modal-item-preview { margin-top:8px; padding:8px; background:var(--bg3); border:1px solid var(--border); border-radius:5px; }
+.preview-icon-row { display:flex; gap:10px; margin-bottom:8px; align-items:flex-start; }
+.preview-icon-box { width:64px; height:64px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:var(--bg2); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+.preview-icon-box img { width:64px; height:64px; object-fit:contain; image-rendering:auto; }
+.preview-icon-box .item-icon-fallback { font-size:36px; }
+.preview-info-col { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; justify-content:center; }
+.preview-name-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.preview-name { font-size:15px; font-weight:700; color:var(--warning); }
+.preview-meta-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.preview-id { font-size:11px; color:var(--primary); font-family:monospace; }
+.preview-type-badge { font-size:10px; color:var(--text); background:var(--bg); border:1px solid var(--border); padding:1px 6px; border-radius:3px; }
+.preview-detail-row { display:flex; gap:4px; flex-wrap:wrap; }
+.detail-tag { font-size:10px; color:var(--text-muted); background:var(--bg); border:1px solid var(--border); padding:1px 5px; border-radius:3px; }
+.preview-desc-box { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:6px 8px; margin-bottom:6px; }
+.preview-section-title { font-size:10px; color:var(--text-muted); margin-bottom:4px; font-weight:600; }
+.preview-desc-text { font-size:11px; color:var(--text); line-height:1.4; }
 .preview-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
 .preview-label { font-size:9px; color:var(--text-muted); text-transform:uppercase; }
-.preview-name { font-size:12px; font-weight:700; color:var(--warning); }
-.preview-id { font-size:10px; color:var(--primary); font-family:monospace; }
 .preview-type { font-size:9px; color:var(--text-muted); background:var(--bg); padding:1px 5px; border-radius:3px; }
-.preview-params { display:flex; flex-direction:column; gap:5px; }
-.param-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.param-row label { font-size:10px; color:var(--text-muted); white-space:nowrap; }
-.param-input { width:60px; padding:2px 5px; font-size:10px; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); }
-.param-narrow { width:45px; }
-.param-check { display:flex; align-items:center; gap:2px; font-size:10px; color:var(--text-muted); cursor:pointer; }
-.param-check input[type=checkbox] { width:13px; height:13px; cursor:pointer; accent-color:var(--warning); }
-.preview-db-name { font-size:10px; color:var(--text-muted); margin-top:4px; padding-top:4px; border-top:1px solid var(--border); }
+.preview-db-name { font-size:10px; color:var(--text-muted); padding-top:4px; border-top:1px solid var(--border); margin-top:2px; }
 .modal-footer { display:flex; justify-content:flex-end; gap:6px; padding:8px 12px; border-top:1px solid var(--border); }
 
 /* Item card enhancement - show DB name */
@@ -615,12 +623,30 @@ body { width: auto; min-width: 480px; }
       </div>
       <div class="modal-item-list" id="modal-item-list"></div>
       <div class="modal-item-preview" id="modal-item-preview" style="display:none">
-        <div class="preview-row">
+        <div class="preview-icon-row">
+          <div class="preview-icon-box" id="preview-icon-box"></div>
+          <div class="preview-info-col">
+            <div class="preview-name-row">
+              <span id="preview-name" class="preview-name"></span>
+              <span id="preview-legend" class="tag tag-bless" style="display:none">傳說</span>
+            </div>
+            <div class="preview-meta-row">
+              <span id="preview-id" class="preview-id"></span>
+              <span id="preview-type-badge" class="preview-type-badge"></span>
+            </div>
+            <div class="preview-detail-row">
+              <span class="detail-tag" id="preview-cat"></span>
+              <span class="detail-tag" id="preview-detail-type"></span>
+            </div>
+          </div>
+        </div>
+        <div class="preview-desc-box" id="preview-desc-box">
+          <div class="preview-section-title">📋 物品說明</div>
+          <div class="preview-desc-text" id="preview-desc-text">（此物品無額外說明）</div>
+        </div>
+        <div class="preview-row" style="margin-top:6px">
           <span class="preview-label">已選</span>
-          <span id="preview-name" class="preview-name"></span>
-          <span id="preview-id" class="preview-id"></span>
-          <span id="preview-type" class="preview-type"></span>
-          <span id="preview-legend" class="tag tag-bless" style="display:none">傳說</span>
+          <span id="preview-db-name" class="preview-id"></span>
         </div>
         <div class="preview-params">
           <div class="param-row">
@@ -3171,6 +3197,7 @@ function filterModalItems() {
     const legend=m.legend?' <span class="mi-legend">★傳說</span>':'';
     const dbn=m.n||m.id;
     return '<div class="modal-item-row'+selected+'" data-id="'+m.id+'">'+
+      '<img src="'+'assets/icons/'+(TYPE_ICON_DIR[m.t]||'items')+'/'+encodeURIComponent(m.n||m.id)+'.png" alt="" class="mi-icon" onerror="this.style.display=\'none\'">'+
       '<span class="mi-name">'+dbn+legend+'</span>'+
       '<span class="mi-id">'+m.id+'</span>'+
       '<span class="mi-cat">'+m.c+'</span>'+
@@ -3197,12 +3224,31 @@ function selectModalItem(id) {
   
   const preview=document.getElementById('modal-item-preview');
   preview.style.display='block';
+
+  // Icon
+  const iconBox=document.getElementById('preview-icon-box');
+  const dir=TYPE_ICON_DIR[info.t]||'items';
+  const src='assets/icons/'+dir+'/'+encodeURIComponent(info.n)+'.png';
+  iconBox.innerHTML='<img src="'+src+'" alt="'+esc(info.n)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"><span class="item-icon-fallback" style="display:none">&#128280;</span>';
+
+  // Name + legend
   document.getElementById('preview-name').textContent=info.n||id;
-  document.getElementById('preview-id').textContent=id;
-  document.getElementById('preview-type').textContent=(info.t||'通用');
   document.getElementById('preview-legend').style.display=info.legend?'inline-block':'none';
-  document.getElementById('preview-db-name').textContent='📦 分類: '+info.c;
-  
+
+  // ID
+  document.getElementById('preview-id').textContent=id;
+
+  // Type badge
+  const typeMap={wpn:'武器',arm:'防具',acc:'飾品',pot:'藥水',scroll:'捲軸',misc:'其他',etc:'其他'};
+  document.getElementById('preview-type-badge').textContent=typeMap[info.t]||info.t||'通用';
+
+  // Detail tags
+  document.getElementById('preview-cat').textContent=info.c||'';
+  document.getElementById('preview-detail-type').textContent=info.legend?'★ 傳說':'\u25c6 普通';
+
+  // DB name
+  document.getElementById('preview-db-name').textContent='📦 分類: '+(info.c||'未知');
+
   // Generate UID
   document.getElementById('modal-param-uid').value=randUid();
   document.getElementById('modal-param-cnt').value=1;
