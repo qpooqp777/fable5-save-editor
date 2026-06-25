@@ -83,7 +83,12 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .item-card-row input.w-cnt { width:55px; }
 .item-card-row input.w-uid { width:75px; font-size:9px; }
 .item-card-row input.w-en { width:40px; }
-.item-card-row input.w-attr { width:55px; }
+.inv-select { padding:1px 4px; font-size:10px; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); cursor:pointer; }
+.inv-select:hover { border-color:var(--primary); }
+.inv-sel-ele { width:60px; }
+.inv-sel-lv { width:40px; }
+.inv-sel-set { width:80px; }
+.select-row { display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:2px; }
 .tag { display:inline-block; padding:1px 4px; border-radius:3px; font-size:9px; font-weight:600; cursor:pointer; user-select:none; }
 .tag-bless { background:#1a3a1a; color:var(--success); border:1px solid #2a5a2a; }
 .tag-anc { background:#3a2a1a; color:var(--warning); border:1px solid #5a4a2a; }
@@ -13091,15 +13096,46 @@ function renderInventory() {
         <input class="w-id" type="text" value="${item.id}" data-field="id" data-idx="${item._idx}" placeholder="ID">
         <input class="w-cnt" type="number" value="${item.cnt}" data-field="cnt" data-idx="${item._idx}" min="0" title="數量">
         <input class="w-en" type="number" value="${item.en}" data-field="en" data-idx="${item._idx}" min="0" title="強化">
-        <input class="w-attr" type="text" value="${item.attr&&item.attr!==false?item.attr:''}" data-field="attr" data-idx="${item._idx}" placeholder="屬性" title="屬性(e.g. fire3)">
       </div>
-      <div class="item-card-row" style="margin-top:2px">
+      <div class="item-card-row tag-row" style="margin-top:2px">
         <span class="tag ${item.bless?'tag-bless':'tag-bless tag-off'}" data-field="bless" data-idx="${item._idx}">祝福</span>
         <span class="tag ${item.anc?'tag-anc':'tag-anc tag-off'}" data-field="anc" data-idx="${item._idx}">遠古</span>
-        <span class="tag ${item.attr&&item.attr!==false?'tag-attr':'tag-attr tag-off'}" data-field="attr_toggle" data-idx="${item._idx}">屬性</span>
-        <span class="tag ${item.seteff?'tag-set':'tag-set tag-off'}" data-field="seteff" data-idx="${item._idx}">套裝</span>
         <span class="tag ${item.lock?'tag-lock':'tag-lock tag-off'}" data-field="lock" data-idx="${item._idx}">🔒鎖</span>
         <span class="tag ${item.junk?'tag-junk':'tag-junk tag-off'}" data-field="junk" data-idx="${item._idx}">垃圾</span>
+      </div>
+      <div class="item-card-row select-row">
+        <label style="font-size:10px;color:var(--text-muted)">屬性</label>
+        <select class="inv-select inv-sel-ele" data-field="attr_ele" data-idx="${item._idx}">
+          <option value="">無</option>
+          <option value="fire" ${(item.attr||'').startsWith('fire')?'selected':''}>🔥 火</option>
+          <option value="water" ${(item.attr||'').startsWith('water')?'selected':''}>💧 水</option>
+          <option value="wind" ${(item.attr||'').startsWith('wind')?'selected':''}>🌪️ 風</option>
+          <option value="earth" ${(item.attr||'').startsWith('earth')?'selected':''}>⛰️ 地</option>
+          <option value="ice" ${(item.attr||'').startsWith('ice')?'selected':''}>❄️ 冰</option>
+          <option value="light" ${(item.attr||'').startsWith('light')?'selected':''}>✨ 光</option>
+          <option value="dark" ${(item.attr||'').startsWith('dark')?'selected':''}>🌑 暗</option>
+        </select>
+        <select class="inv-select inv-sel-lv" data-field="attr_lv" data-idx="${item._idx}">
+          <option value="">-</option>
+          <option value="1" ${(item.attr||'').endsWith('1')?'selected':''}>1</option>
+          <option value="2" ${(item.attr||'').endsWith('2')?'selected':''}>2</option>
+          <option value="3" ${(item.attr||'').endsWith('3')?'selected':''}>3</option>
+          <option value="4" ${(item.attr||'').endsWith('4')?'selected':''}>4</option>
+          <option value="5" ${(item.attr||'').endsWith('5')?'selected':''}>5</option>
+        </select>
+        <label style="font-size:10px;color:var(--text-muted);margin-left:8px">套裝</label>
+        <select class="inv-select inv-sel-set" data-field="seteff" data-idx="${item._idx}">
+          <option value="">無</option>
+          <option value="紅獅" ${item.seteff==='紅獅'?'selected':''}>🦁 紅獅</option>
+          <option value="白鳥" ${item.seteff==='白鳥'?'selected':''}>🕊️ 白鳥</option>
+          <option value="鐵衛" ${item.seteff==='鐵衛'?'selected':''}>⚙️ 鐵衛</option>
+          <option value="麗人" ${item.seteff==='麗人'?'selected':''}>💎 麗人</option>
+          <option value="疾風" ${item.seteff==='疾風'?'selected':''}>🌪️ 疾風</option>
+          <option value="月光" ${item.seteff==='月光'?'selected':''}>🌙 月光</option>
+          <option value="學徒" ${item.seteff==='學徒'?'selected':''}>📖 學徒</option>
+          <option value="魔女" ${item.seteff==='魔女'?'selected':''}>🧙 魔女</option>
+          <option value="暗影" ${item.seteff==='暗影'?'selected':''}>🌑 暗影</option>
+        </select>
       </div>`;
     c.appendChild(card);
   });
@@ -13113,12 +13149,31 @@ function renderInventory() {
       else if (field==='attr') item.attr=input.value||false;
     });
   });
+  // Bind tags (祝福/遠古/鎖定/垃圾)
   c.querySelectorAll('.tag[data-field]').forEach(tag => {
     tag.addEventListener('click', () => {
       const idx=parseInt(tag.dataset.idx), field=tag.dataset.field, item=p.inv[idx];
-      if (field==='attr_toggle') { item.attr = item.attr&&item.attr!==false ? false : 'fire1'; }
-      else { item[field]=!item[field]; }
+      item[field]=!item[field];
       renderInventory();
+    });
+  });
+  // Bind selects (屬性/套裝)
+  c.querySelectorAll('select[data-field]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const idx=parseInt(sel.dataset.idx), field=sel.dataset.field, item=p.inv[idx];
+      if (field==='attr_ele') {
+        const ele = sel.value;
+        const lvSel = c.querySelector(`select[data-field="attr_lv"][data-idx="${idx}"]`);
+        const lv = lvSel ? lvSel.value : '';
+        item.attr = ele ? (ele + lv) : false;
+      } else if (field==='attr_lv') {
+        const lv = sel.value;
+        const eleSel = c.querySelector(`select[data-field="attr_ele"][data-idx="${idx}"]`);
+        const ele = eleSel ? eleSel.value : '';
+        item.attr = ele ? (ele + lv) : false;
+      } else if (field==='seteff') {
+        item.seteff = sel.value || false;
+      }
     });
   });
   c.querySelectorAll('.item-del').forEach(btn => {

@@ -143,6 +143,14 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .btn-preset { background:var(--bg3); border-color:var(--border); color:var(--text-muted); font-size:10px; padding:4px 8px; }
 .btn-preset:hover { border-color:var(--primary); color:var(--primary); }
 
+/* Inventory selects */
+.inv-select { padding:1px 4px; font-size:10px; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); cursor:pointer; }
+.inv-select:hover { border-color:var(--primary); }
+.inv-sel-ele { width:60px; }
+.inv-sel-lv { width:40px; }
+.inv-sel-set { width:80px; }
+.select-row { display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:2px; }
+
 /* JSON */
 .json-editor { width:100%; height:200px; background:var(--bg3); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:'Consolas','Courier New',monospace; font-size:10px; padding:6px; resize:vertical; outline:none; }
 .json-actions { display:flex; gap:5px; margin-top:5px; }
