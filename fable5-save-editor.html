@@ -610,6 +610,7 @@ body { width: auto; min-width: 480px; }
         <input type="text" id="modal-item-search" placeholder="🔍 搜尋物品名稱 / ID..." autocomplete="off" class="search-input">
         <select id="modal-cat-filter" class="cat-filter">
           <option value="">全部分類</option>
+          <option value="legend">⭐ 傳說</option>
           <option value="武器">⚔️ 武器</option>
           <option value="鎧甲">🛡️ 鎧甲</option>
           <option value="護甲">🛡️ 護甲</option>
@@ -13565,7 +13566,11 @@ function filterModalItems() {
   // Get matching items from ITEM_DB
   let matches=[];
   for(const [id,info] of Object.entries(ITEM_DB)) {
-    if(catFilter && info.c!==catFilter) continue;
+    // 傳說篩選
+    if(catFilter==='legend') {
+      if(!info.legend) continue;
+    } else if(catFilter && info.c!==catFilter) continue;
+    
     if(!query || id.toLowerCase().includes(query) || (info.n&&info.n.toLowerCase().includes(query))) {
       matches.push({id, ...info});
     }

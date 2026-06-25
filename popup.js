@@ -853,7 +853,11 @@ function filterModalItems() {
   // Get matching items from ITEM_DB
   let matches=[];
   for(const [id,info] of Object.entries(ITEM_DB)) {
-    if(catFilter && info.c!==catFilter) continue;
+    // 傳說篩選
+    if(catFilter==='legend') {
+      if(!info.legend) continue;
+    } else if(catFilter && info.c!==catFilter) continue;
+    
     if(!query || id.toLowerCase().includes(query) || (info.n&&info.n.toLowerCase().includes(query))) {
       matches.push({id, ...info});
     }
