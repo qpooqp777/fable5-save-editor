@@ -13617,7 +13617,23 @@ function selectModalItem(id) {
       if(stats[r]!=null) statLines.push({l:' '+r.replace('res',''),v:'+'+stats[r]+'%'});
     });
   }
-  if(stats.req&&stats.req!=='all') statLines.push({l:' Req: ',v:stats.req});
+  if(stats.req&&stats.req!=='all') {
+    // 转换职业代码为中文名称
+    const classMap={
+      'all':'全職業',
+      'knight':'騎士',
+      'elf':'妖精',
+      'mage':'法師',
+      'ranger':'遊俠',
+      'paladin':'聖騎士',
+      'rogue':'盜賊',
+      'cleric':'牧師',
+      'darkknight':'黑騎士',
+      'illusion':'幻術師'
+    };
+    const reqNames=stats.req.split(',').map(c=>classMap[c]||c).join('、');
+    statLines.push({l:' 職業限制',v:reqNames});
+  }
   if(statLines.length>0){
     statsBox.style.display='block';
     statsBox.innerHTML='<div class="preview-section-title">📊 \u80FD\u529B\u6578\u503C<\/div>'+
