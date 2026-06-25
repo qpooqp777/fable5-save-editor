@@ -1705,5 +1705,6 @@ const ITEM_NAME_LOOKUP = {
   "黑暗十字弓": "wpn_xbow_dark",
   "幽暗十字弓": "wpn_xbow_gloom",
   "拉斯塔巴德重十字弓": "wpn_xbow_heavy_rasta",
-  "拉斯塔巴德十字弓": "wpn_xbow_rasta",
+  "拉斯塔巴德十字弓": "wpn_xbow_rasta"
+
 };

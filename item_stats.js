@@ -10275,4 +10275,5 @@ const ITEM_STATS = {
     "c": "武器",
     "legend": false
   }
+
 };
