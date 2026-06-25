@@ -481,34 +481,92 @@ function renderEquipment() {
       if(item.bless)tagsHtml+='<span class="tag tag-bless">祝福</span>';
       if(item.anc)tagsHtml+='<span class="tag tag-anc">遠古</span>';
       if(item.attr&&item.attr!==false)tagsHtml+=`<span class="tag tag-attr">${item.attr}</span>`;
-      if(item.seteff)tagsHtml+='<span class="tag tag-set">套裝</span>';
+      if(item.seteff)tagsHtml+=`<span class="tag tag-set">${item.seteff}</span>`;
       if(item.lock)tagsHtml+='<span class="tag tag-lock">🔒</span>';
     }
+    // 解析屬性
+    const attrStr = (item?.attr&&item.attr!==false) ? item.attr : '';
+    const attrEle = attrStr.replace(/\d+$/, '');
+    const attrLv = attrStr.slice(attrEle.length);
+    
     slot.innerHTML=`
       <div class="eq-slot-name">${label}</div>
       ${item?`<div class="eq-slot-item">${item.id} +${item.en}</div>`:'<div class="eq-slot-empty">(空)</div>'}
       <div class="eq-slot-fields">
         <input type="text" data-eq="${key}" data-field="id" value="${item?.id||''}" placeholder="物品 ID">
         <input type="number" data-eq="${key}" data-field="en" value="${item?.en||0}" min="0" placeholder="強化">
-        <input type="text" data-eq="${key}" data-field="attr" value="${item?.attr&&item.attr!==false?item.attr:''}" placeholder="屬性">
         <div class="eq-checks"><label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="bless" ${item?.bless?'checked':''}>祝福</label>
         <label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="anc" ${item?.anc?'checked':''}>遠古</label>
         <label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="lock" ${item?.lock?'checked':''}>🔒</label></div>
       </div>
+      <div class="eq-slot-selects">
+        <label style="font-size:9px;color:var(--text-muted)">屬性</label>
+        <select class="inv-select inv-sel-ele" data-eq="${key}" data-field="attr_ele">
+          <option value="">無</option>
+          <option value="fire" ${attrEle==='fire'?'selected':''}>🔥 火</option>
+          <option value="water" ${attrEle==='water'?'selected':''}>💧 水</option>
+          <option value="wind" ${attrEle==='wind'?'selected':''}>🌪️ 風</option>
+          <option value="earth" ${attrEle==='earth'?'selected':''}>⛰️ 地</option>
+          <option value="ice" ${attrEle==='ice'?'selected':''}>❄️ 冰</option>
+          <option value="light" ${attrEle==='light'?'selected':''}>✨ 光</option>
+          <option value="dark" ${attrEle==='dark'?'selected':''}>🌑 暗</option>
+        </select>
+        <select class="inv-select inv-sel-lv" data-eq="${key}" data-field="attr_lv">
+          <option value="">-</option>
+          <option value="1" ${attrLv===''?'selected':attrLv==='1'?'selected':''}>1</option>
+          <option value="2" ${attrLv==='2'?'selected':''}>2</option>
+          <option value="3" ${attrLv==='3'?'selected':''}>3</option>
+          <option value="4" ${attrLv==='4'?'selected':''}>4</option>
+          <option value="5" ${attrLv==='5'?'selected':''}>5</option>
+        </select>
+        <label style="font-size:9px;color:var(--text-muted);margin-left:6px">套裝</label>
+        <select class="inv-select inv-sel-set" data-eq="${key}" data-field="seteff">
+          <option value="">無</option>
+          <option value="紅獅" ${item?.seteff==='紅獅'?'selected':''}>🦁 紅獅</option>
+          <option value="白鳥" ${item?.seteff==='白鳥'?'selected':''}>🕊️ 白鳥</option>
+          <option value="鐵衛" ${item?.seteff==='鐵衛'?'selected':''}>⚙️ 鐵衛</option>
+          <option value="麗人" ${item?.seteff==='麗人'?'selected':''}>💎 麗人</option>
+          <option value="疾風" ${item?.seteff==='疾風'?'selected':''}>🌪️ 疾風</option>
+          <option value="月光" ${item?.seteff==='月光'?'selected':''}>🌙 月光</option>
+          <option value="學徒" ${item?.seteff==='學徒'?'selected':''}>📖 學徒</option>
+          <option value="魔女" ${item?.seteff==='魔女'?'selected':''}>🧙 魔女</option>
+          <option value="暗影" ${item?.seteff==='暗影'?'selected':''}>🌑 暗影</option>
+        </select>
+      </div>
       <div class="eq-slot-tags">${tagsHtml}</div>`;
     c.appendChild(slot);
   });
+  // Bind inputs
   c.querySelectorAll('input[data-eq]').forEach(input=>{
     input.addEventListener('change',()=>{
       const key=input.dataset.eq, field=input.dataset.field;
       if(!p.eq[key]) p.eq[key]={uid:randUid(),cnt:1,en:0,bless:false,anc:false,attr:false,seteff:false,lock:false,junk:false};
       if(field==='id'){if(input.value)p.eq[key].id=input.value;else p.eq[key]=null;}
       else if(field==='en')p.eq[key].en=parseInt(input.value)||0;
-      else if(field==='attr')p.eq[key].attr=input.value||false;
       else if(field==='bless')p.eq[key].bless=input.checked;
       else if(field==='anc')p.eq[key].anc=input.checked;
       else if(field==='lock')p.eq[key].lock=input.checked;
       renderEquipment();
+    });
+  });
+  // Bind selects
+  c.querySelectorAll('select[data-eq]').forEach(sel=>{
+    sel.addEventListener('change',()=>{
+      const key=sel.dataset.eq, field=sel.dataset.field;
+      if(!p.eq[key]) p.eq[key]={uid:randUid(),cnt:1,en:0,bless:false,anc:false,attr:false,seteff:false,lock:false,junk:false};
+      if(field==='attr_ele'){
+        const ele = sel.value;
+        const lvSel = c.querySelector(`select[data-eq="${key}"][data-field="attr_lv"]`);
+        const lv = lvSel ? lvSel.value : '';
+        p.eq[key].attr = ele ? (ele + lv) : false;
+      } else if(field==='attr_lv'){
+        const lv = sel.value;
+        const eleSel = c.querySelector(`select[data-eq="${key}"][data-field="attr_ele"]`);
+        const ele = eleSel ? eleSel.value : '';
+        p.eq[key].attr = ele ? (ele + lv) : false;
+      } else if(field==='seteff'){
+        p.eq[key].seteff = sel.value || false;
+      }
     });
   });
 }
