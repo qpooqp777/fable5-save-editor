@@ -386,7 +386,13 @@ function renderInventory() {
       </div>
       <div class="item-card-row tag-row" style="margin-top:2px">
         <span class="tag ${item.bless?'tag-bless':'tag-bless tag-off'}" data-field="bless" data-idx="${item._idx}">祝福</span>
-        <span class="tag ${item.anc?'tag-anc':'tag-anc tag-off'}" data-field="anc" data-idx="${item._idx}">遠古</span>
+        <select class="inv-select inv-sel-anc" data-field="anc" data-idx="${item._idx}" style="padding:1px 4px;font-size:9px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:${item.anc?'var(--warning)':'var(--text-muted)'}">
+          <option value="">無</option>
+          <option value="ancient" ${item.anc==='ancient'?'selected':''}>遠古</option>
+          <option value="eternal" ${item.anc==='eternal'?'selected':''}>永恆</option>
+          <option value="immortal" ${item.anc==='immortal'?'selected':''}>不朽</option>
+          <option value="primordial" ${item.anc==='primordial'?'selected':''}>太初</option>
+        </select>
         <span class="tag ${item.lock?'tag-lock':'tag-lock tag-off'}" data-field="lock" data-idx="${item._idx}">🔒鎖</span>
         <span class="tag ${item.junk?'tag-junk':'tag-junk tag-off'}" data-field="junk" data-idx="${item._idx}">垃圾</span>
       </div>
@@ -436,7 +442,7 @@ function renderInventory() {
       else if (field==='attr') item.attr=input.value||false;
     });
   });
-  // Bind tags (祝福/遠古/鎖定/垃圾)
+  // Bind tags (祝福/鎖定/垃圾)
   c.querySelectorAll('.tag[data-field]').forEach(tag => {
     tag.addEventListener('click', () => {
       const idx=parseInt(tag.dataset.idx), field=tag.dataset.field, item=p.inv[idx];
@@ -462,6 +468,8 @@ function renderInventory() {
         item.attr = ele ? (ele + lv) : false;
       } else if (field==='seteff') {
         item.seteff = sel.value || false;
+      } else if (field==='anc') {
+        item.anc = sel.value || false;
       }
     });
   });
@@ -479,7 +487,8 @@ function renderEquipment() {
     let tagsHtml='';
     if(item){
       if(item.bless)tagsHtml+='<span class="tag tag-bless">祝福</span>';
-      if(item.anc)tagsHtml+='<span class="tag tag-anc">遠古</span>';
+      const ANC_LABELS={ancient:'遠古',eternal:'永恆',immortal:'不朽',primordial:'太初'};
+      if(item.anc&&ANC_LABELS[item.anc])tagsHtml+='<span class="tag tag-anc">'+ANC_LABELS[item.anc]+'</span>';
       if(item.attr&&item.attr!==false)tagsHtml+=`<span class="tag tag-attr">${item.attr}</span>`;
       if(item.seteff)tagsHtml+=`<span class="tag tag-set">${item.seteff}</span>`;
       if(item.lock)tagsHtml+='<span class="tag tag-lock">🔒</span>';
@@ -496,7 +505,7 @@ function renderEquipment() {
         <input type="text" data-eq="${key}" data-field="id" value="${item?.id||''}" placeholder="物品 ID">
         <input type="number" data-eq="${key}" data-field="en" value="${item?.en||0}" min="0" placeholder="強化">
         <div class="eq-checks"><label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="bless" ${item?.bless?'checked':''}>祝福</label>
-        <label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="anc" ${item?.anc?'checked':''}>遠古</label>
+        <select class="inv-select" data-eq="${key}" data-field="anc" style="padding:1px 4px;font-size:9px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:${item?.anc?'var(--warning)':'var(--text-muted)'}"><option value="">無</option><option value="ancient" ${item?.anc==='ancient'?'selected':''}>遠古</option><option value="eternal" ${item?.anc==='eternal'?'selected':''}>永恆</option><option value="immortal" ${item?.anc==='immortal'?'selected':''}>不朽</option><option value="primordial" ${item?.anc==='primordial'?'selected':''}>太初</option></select>
         <label class="eq-check"><input type="checkbox" data-eq="${key}" data-field="lock" ${item?.lock?'checked':''}>🔒</label></div>
       </div>
       <div class="eq-slot-selects">
@@ -544,7 +553,7 @@ function renderEquipment() {
       if(field==='id'){if(input.value)p.eq[key].id=input.value;else p.eq[key]=null;}
       else if(field==='en')p.eq[key].en=parseInt(input.value)||0;
       else if(field==='bless')p.eq[key].bless=input.checked;
-      else if(field==='anc')p.eq[key].anc=input.checked;
+
       else if(field==='lock')p.eq[key].lock=input.checked;
       renderEquipment();
     });
@@ -566,6 +575,8 @@ function renderEquipment() {
         p.eq[key].attr = ele ? (ele + lv) : false;
       } else if(field==='seteff'){
         p.eq[key].seteff = sel.value || false;
+      } else if(field==='anc'){
+        p.eq[key].anc = sel.value || false;
       }
     });
   });
@@ -1006,7 +1017,7 @@ function selectModalItem(id) {
   document.getElementById('modal-param-cnt').value=1;
   document.getElementById('modal-param-en').value=0;
   document.getElementById('modal-param-bless').checked=false;
-  document.getElementById('modal-param-anc').checked=false;
+  document.getElementById('modal-param-anc').value='';
   document.getElementById('modal-param-attr-ele').value='';
   document.getElementById('modal-param-attr-lv').value='';
   document.getElementById('modal-param-lock').checked=false;
@@ -1024,7 +1035,7 @@ function confirmAddItem() {
   let uid=document.getElementById('modal-param-uid').value.trim();
   if(!uid) uid=randUid();
   const bless=document.getElementById('modal-param-bless').checked;
-  const anc=document.getElementById('modal-param-anc').checked;
+  const anc=document.getElementById('modal-param-anc').value||false;
   const attrEle=document.getElementById('modal-param-attr-ele').value;
   const attrLv=document.getElementById('modal-param-attr-lv').value;
   const attr=attrEle?(attrEle+attrLv):false;
@@ -1048,7 +1059,7 @@ function confirmAddItem() {
   // Insert at the beginning of inventory
   saveData.p.inv.unshift(item);
   renderInventory();
-  closeAddItemModal();
+  // Keep modal open, keep all param values (for rapid sequential add)
   const dbn=ITEM_DB[modalSelectedItemId]?.n||modalSelectedItemId;
   showToast('✅ 已加入 '+dbn+' ×'+cnt,'success');
 }
